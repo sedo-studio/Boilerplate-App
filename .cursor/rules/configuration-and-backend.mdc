@@ -1,0 +1,120 @@
+---
+description: Configuration, secrets, feature flags, the setup wizard, XcodeGen (app + widget targets), and the dual-provider Flask AI backend. Read when editing Config, setup.sh, project.yml, or Backend/Python.
+globs: Config/**/*.swift,setup.sh,setup-config.json,project.yml,Backend/Python/**
+---
+
+# Configuration, setup & AI backend
+
+## `Config/AppConfig.swift`
+
+`AppConfig` carries `appName`, `bundleId`, `backend` (`.supabase`/`.local`),
+`layout` (`.list`/`.grid`), `onboardingStyle`
+(`.carousel`/`.highlights`/`.minimal`), `branding` (primary/accent hex),
+`featureFlags`, `legal`. `AppConfig.default` is what `DIContainer.makeDefault()`
+uses at startup.
+
+## Feature flags — `Config/FeatureFlags.swift`
+
+**Use these exact names** (README's `enable*` names are stale).
+
+- **Base:** `onboarding, auth, paywall, notifications, aiFeatures, appleSignIn,
+  enableCaching`
+- **PRO:** `charts, reviewPrompt, inAppFeedback, biometricLock, localization,
+  paywallTemplates, widgets, questionnaireOnboarding, gamification, aiPro,
+  camera, reminders, swiftDataStore`
+
+The memberwise init defaults **everything to `false` except
+`enableCaching = true`** — including all 13 Pro flags. `setup.sh` rewrites the
+whole `featureFlags:` line. Gate both the UI and any background work behind the
+flag. See `pro-features.mdc` for what each Pro flag controls.
+
+## Secrets — `Config/Secrets.swift` (generated, gitignored)
+
+Shape defined by `Config/Secrets.sample.swift` (compiled only with
+`-D USE_SAMPLE_SECRETS`). Keys: `supabaseURL`, `supabaseAnonKey`,
+`appleServiceId/appleTeamId/appleKeyId/applePrivateKeyPEM` (web SIWA only —
+native iOS SIWA needs none), `accountDeletionURLString`(+`URL`),
+`telemetryDeckAppID`, `revenueCatAPIKey`, `aiBackendBaseURLString`(+`URL`).
+
+**Pro adds no new secrets** — the Gemini key lives on the server, never in the
+app. **Empty keys are valid** → noop/local fallbacks. Never invent, hardcode, or
+commit real values.
+
+## Setup wizard & placeholders
+
+`./setup.sh` (interactive) or `./setup.sh --config setup-config.json`:
+
+- Replaces tokens repo-wide: `__APP_NAME__`, `__BUNDLE_ID__`,
+  `__PRIMARY_COLOR__`, `__ACCENT_COLOR__`, `__PRIVACY_URL__`, `__TERMS_URL__`,
+  `__TESTFLIGHT_APP_ID__`.
+- Generates `Config/Secrets.swift`.
+- Rewrites `AppConfig.swift` (`backend`, `onboardingStyle`, the full
+  `featureFlags:` line **including all 13 Pro flags**) and `DesignSystem.swift`
+  (`surfaceStyle`, `spacingDensity`).
+- Updates `project.yml` + `project.pbxproj` and runs `xcodegen generate`.
+
+Treat leftover `__…__` tokens as "not yet configured", not bugs — and never
+commit a tree where they have already been replaced.
+
+**If you add a feature flag, add it to `setup.sh` too**, or the wizard will
+rewrite the line without it and silently drop the feature.
+
+## XcodeGen — `project.yml`
+
+The `.xcodeproj` is generated; **don't hand-edit it**. Two targets:
+
+- **`TheSwiftKit`** (app, iOS 16.0) — globs `Config/`, `Core/`, `Modules/`,
+  `Backend/`, `Resources/`, plus **PRO** `Widgets/Shared`.
+  `Backend/Python/**` and Backend `*.md`/`*.txt` are excluded.
+- **PRO `TheSwiftKitWidgets`** (`app-extension`, iOS **16.1**) — globs
+  `Widgets/` (excluding its `Info.plist`), bundle id `<app>.widgets`, embedded
+  in the app target.
+
+Note `Widgets/Shared` is listed in **both** targets: Live Activity attribute
+types must exist app-side and extension-side.
+
+> **Don't "fix" the hardcoded widget bundle id.** `project.yml` ships
+> `com.agaganorg.theswiftkit` (app) and `com.agaganorg.theswiftkit.widgets`
+> (extension) rather than `__BUNDLE_ID__` placeholders. `setup.sh` rewrites them
+> with a **global substring** replace of `com.agaganorg.theswiftkit`, so the
+> widget correctly becomes `<buyer-id>.widgets` and stays prefixed by the host
+> app — which app extensions require. Converting these to placeholders would
+> break that.
+
+**PRO Info.plist keys** (all commented with the feature that needs them):
+`NSFaceIDUsageDescription` (AppLock), `NSCameraUsageDescription` (Capture),
+`CFBundleLocalizations: [en, es, hi]` (Localization), `NSSupportsLiveActivities`
+(Widgets).
+
+Packages: Supabase 2.0.0+, TelemetryDeck SwiftSDK 1.5.1+ (product
+`TelemetryClient`), RevenueCat 5.0.0+. Swift 5.9.
+
+## AI backend — `Backend/Python/app.py` (Flask, not in the iOS target)
+
+Keeps the provider key server-side. **PRO: dual-provider.** Set
+`LLM_PROVIDER=openai` (default) or `LLM_PROVIDER=gemini` in `.env` — **the iOS
+app does not change, only the server does.**
+
+| Endpoint | OpenAI model | Gemini model | Swift caller |
+|---|---|---|---|
+| `/v1/chat` | `gpt-4o` | `gemini-2.5-flash` | `AIApiClient.sendChat(...)` |
+| `/v1/chat/stream` **PRO** | `gpt-4o` (SSE) | `gemini-2.5-flash` (SSE) | `AIProStreamClient.stream(...)` |
+| `/v1/images` | `gpt-image-1.5` | `imagen-3.0-generate-002` | `AIApiClient.generateImages(...)` |
+| `/v1/vision` | `gpt-4o` | `gemini-2.5-flash` | `AIApiClient.visionAnalyze(...)` |
+| `/health` | — | — | — |
+
+Every model is env-overridable (`OPENAI_CHAT_MODEL`, `GEMINI_CHAT_MODEL`, …);
+`OPENAI_BASE_URL` supports proxies/Azure. Gemini image generation needs an SDK
+version exposing `ImageGenerationModel`; otherwise the server returns a clear
+error suggesting `LLM_PROVIDER=openai`.
+
+Run: `cd Backend/Python && pip install -r requirements.txt && cp .env.example
+.env` (set `LLM_PROVIDER` + the matching key) `&& python app.py` (port 5001).
+
+If you change request/response JSON, change **both** `app.py` and the Swift
+`Codable` structs (`ChatReply{reply}`, `ImagesResponse{images:[String]}` base64,
+`VisionResponse{result}`) so they stay in sync.
+
+`AIProStreamClient` falls back to a built-in canned streamer when
+`/v1/chat/stream` is unreachable — **keep that fallback**, it is what makes the
+AI PRO demo work with no backend running.

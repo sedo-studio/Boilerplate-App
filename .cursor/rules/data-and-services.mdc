@@ -1,0 +1,97 @@
+---
+description: Data layer & services — repositories, domain models, DIContainer, caching, conditional SDKs, app events, and why Pro managers are singletons. Read when editing Backend, Core/Cache, Core/Services, Core/DI.
+globs: Backend/**/*.swift,Core/Cache/**/*.swift,Core/Services/**/*.swift,Core/DI/**/*.swift,Core/Analytics/**/*.swift,Core/Notifications/**/*.swift
+---
+
+# Data layer & services
+
+## Dependency injection — `Core/DI/DIContainer.swift`
+
+`DIContainer` is a `Sendable` **struct** holding every service: `config`,
+`authRepository`, `userRepository`, `profileRepository`,
+`subscriptionRepository`, `purchasesService`, `analytics`,
+`appleSignInService`, `cacheManager`. `DIContainer.makeDefault(config:)` is the
+composition root — it picks `Supabase*` vs `Local*` per `config.backend`, wraps
+profile/subscription repos in `Cached*` decorators when
+`featureFlags.enableCaching`, and selects live-vs-noop analytics/purchases.
+
+**Identical to the base kit — no Pro feature adds a container service**, and
+none should. A container property referencing a Pro type would break compilation
+the moment a buyer deleted that folder. Pro features use `@MainActor` `.shared`
+singletons instead (`AppLockManager`, `LocalizationManager`, `ReviewManager`,
+`GamificationEngine`, `ReminderScheduler`) — see `pro-features.mdc`.
+
+Inject with `.inject(container)`; read with
+`@Environment(\.container) private var container`. **Add a new core service** by
+defining a protocol (+ a `Local`/`Noop` fallback), adding a stored property to
+`DIContainer`, constructing it in `makeDefault`, and reading it from the
+environment.
+
+## Repository protocols (`Backend/Protocols/`)
+
+| Protocol | Methods | Impls |
+|---|---|---|
+| `AuthRepository` | `signIn`, `signUp`→`SignUpOutcome`, `signInWithApple(idToken:nonce:)`, `signOut`, `currentUser` | `LocalAuthRepository` (actor) / `SupabaseAuthRepository` |
+| `UserRepository` | `fetchCurrentUserProfile() -> User` | `LocalUserRepository` |
+| `ProfileRepository` | `fetchProfile(for:)`, `upsertProfile(_:)`, `uploadAvatar(data:for:contentType:)` | `LocalProfileRepository` / `SupabaseProfileRepository` |
+| `SubscriptionRepository` | `fetch(for:) -> SubscriptionStatus?` | `LocalSubscriptionRepository` (no Supabase impl) |
+
+**Domain models** (all `Codable, Sendable`): `User{id,email}`,
+`Profile{id,name,gender,contact,avatarURL,subscriptionStatus,updatedAt}`,
+`Gender{unspecified,male,female,other}`, top-level
+`SubscriptionStatus{plan,expiresAt}`, `SubscriptionPlan{free,pro,premium}`,
+`SignUpOutcome{signedIn(User),confirmationEmailSent}`.
+
+> Two distinct `SubscriptionStatus` types exist: the nested
+> `Profile.SubscriptionStatus` (display-string enum) and the top-level struct
+> used by `SubscriptionRepository`. Don't conflate them.
+
+**Add a repository:** `protocol FooRepository: Sendable` + `LocalFooRepository`
+in `Backend/Protocols/`; `SupabaseFooRepository` in `Backend/Supabase/` behind
+`#if canImport(Supabase)`; wire selection into `makeDefault`; optionally add a
+`Cached` decorator.
+
+## Conditional SDK imports (keep the project SDK-optional)
+
+```swift
+#if canImport(RevenueCat)
+purchases = RevenueCatPurchasesService(apiKey: Secrets.revenueCatAPIKey)
+#else
+purchases = NoopPurchasesService()   // demo data + warning log
+#endif
+```
+
+Same for Supabase (→ `Local*`) and TelemetryDeck/TelemetryClient
+(→ `NoopAnalyticsService`). Add a no-op/local branch for any new SDK.
+
+## Caching (`Core/Cache/`)
+
+Actor-based, two-tier (in-memory + dedicated `UserDefaults` suite).
+`CacheManager.shared` conforms to `CacheStorage`: `get<T>(forKey:)`,
+`set<T>(_:forKey:expiry:)`, `remove(forKey:)`, `removeAll()`,
+`invalidate(matching:)` (wildcard `*`), `contains`, `allKeys`.
+
+- Keys: extend the `CacheKeys` enum (e.g. `CacheKeys.profile(userId)`).
+- Expiry: `CacheExpiry` `.never/.seconds/.minutes/.hours/.days`; named defaults
+  in `CacheConfig`.
+- Pattern: wrap a repo in a `Cached*` decorator **actor** — check cache, fall
+  through to `remote`, write back; register behind `enableCaching`.
+- Sign-out clears the cache via `CacheInvalidationObserver`.
+
+## Services & app events
+
+- `AnalyticsService`: `configure`, `track(_:properties:)`, `identify(userID:)`.
+- `PurchasesService`: offerings/purchase/restore + `PurchaseOption` view model;
+  `NoopPurchasesService` returns demo offerings.
+- `AppleSignInServiceProtocol.authorize()` → `AppleSignInResult` (raw nonce +
+  identity token) → `authRepository.signInWithApple(idToken:nonce:)`.
+- `NotificationService.shared` (`@MainActor`): auth, local scheduling, APNs.
+  **PRO** `ReminderScheduler.shared` builds on top of it.
+- `AppLogger.log(_:level:)` (DEBUG-only) instead of bare `print`.
+- **App events** (`Core/Utils/AppEvents.swift`): `.authStatusDidChange`,
+  `.profileDidChange`, `.subscriptionDidChange`, `.userDidSignOut` (payload keys
+  via `SubscriptionEventKey`). Post on state change; observe with
+  `.onReceive(NotificationCenter…)`.
+
+Tests use **XCTest** with `@testable import TheSwiftKit` (`Tests/`); keep them
+offline via the `.local` backend / `Local*` repos.

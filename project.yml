@@ -1,0 +1,108 @@
+name: TheSwiftKit
+options:
+  deploymentTarget:
+    iOS: '16.0'
+  createIntermediateGroups: true
+  # Ensure generated pbxproj is compatible with your Xcode
+  # Bump to match your installed Xcode version if needed (e.g., '16.0')
+  xcodeVersion: '15.1'
+settings:
+  base:
+    SWIFT_VERSION: 5.9
+    IPHONEOS_DEPLOYMENT_TARGET: 16.0
+targets:
+  TheSwiftKit:
+    type: application
+    platform: iOS
+    dependencies:
+      - package: Supabase
+      - package: TelemetryDeck
+        product: TelemetryClient
+      - package: RevenueCat
+        product: RevenueCat
+      # PRO: embed the widget extension (Widgets/) — remove with the feature.
+      - target: TheSwiftKitWidgets
+        embed: true
+    sources:
+      - path: Config
+        excludes:
+          - Secrets.sample.swift
+      - path: Core
+      - path: Modules
+      - path: Backend
+        excludes:
+          - "**/*.md"
+          - "**/*.txt"
+          - "**/Python/**"
+      - path: Resources
+        excludes:
+          - Info.plist # handled via info block below
+      # PRO: Live Activities shared types compiled into the app (Widgets/Shared).
+      - path: Widgets/Shared
+    info:
+      path: Resources/Info.plist
+      properties:
+        UILaunchStoryboardName: LaunchScreen
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        # PRO: biometric app lock (Modules/AppLock) — remove if you drop the feature.
+        NSFaceIDUsageDescription: Unlock the app with Face ID.
+        # PRO: document scanner (Modules/Capture) — remove if you drop the feature.
+        NSCameraUsageDescription: Scan documents and capture photos.
+        # PRO: in-app localization (Modules/Localization) — languages the app ships.
+        CFBundleLocalizations:
+          - en
+          - es
+          - hi
+        # PRO: Live Activities (Widgets/) — remove if you drop the feature.
+        NSSupportsLiveActivities: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.agaganorg.theswiftkit
+        CURRENT_PROJECT_VERSION: 1
+        MARKETING_VERSION: 1.0
+    scheme:
+      testTargets:
+        - name: TheSwiftKitTests
+
+  TheSwiftKitTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests
+    dependencies:
+      - target: TheSwiftKit
+
+  # PRO: Widget extension (home/lock-screen widgets + Live Activities).
+  # To remove: delete this target + the Widgets/ folder + the app's embed
+  # dependency + the Widgets/Shared app source + NSSupportsLiveActivities.
+  TheSwiftKitWidgets:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: Widgets
+        excludes:
+          - Info.plist
+    info:
+      path: Widgets/Info.plist
+      properties:
+        CFBundleDisplayName: Swift Kit Widgets
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.agaganorg.theswiftkit.widgets
+        IPHONEOS_DEPLOYMENT_TARGET: '16.1'
+        CURRENT_PROJECT_VERSION: 1
+        MARKETING_VERSION: 1.0
+
+packages:
+  Supabase:
+    url: https://github.com/supabase-community/supabase-swift
+    from: 2.0.0
+  TelemetryDeck:
+    url: https://github.com/TelemetryDeck/SwiftSDK
+    from: 1.5.1
+  RevenueCat:
+    url: https://github.com/RevenueCat/purchases-ios
+    from: 5.0.0
