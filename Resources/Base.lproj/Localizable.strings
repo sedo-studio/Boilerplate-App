@@ -66,6 +66,8 @@
 "radar.warmup.title" = "Listening…";
 "radar.warmup.body" = "Hold still for a moment while we take a few readings.";
 "radar.gotthem" = "I've got them";
+"radar.preview.chip" = "Preview";
+"radar.preview.note" = "This is the live radar. Unlock it to keep it running while you search.";
 "radar.disclaimer" = "Based on Bluetooth signal strength. Signal bounces off walls, bodies and furniture, so treat this as warmer/colder — not a direction.";
 "radar.proximity.veryclose" = "Very close";
 "radar.proximity.veryclose.detail" = "Within arm's reach. Check under cushions, in bags and down the sides of chairs.";
@@ -92,6 +94,9 @@
 /* MARK: - Paywall #1 — radar unlock (one-time) */
 "paywall.radar.title" = "See how close you are";
 "paywall.radar.subtitle" = "Turn a yes-or-no answer into a warmer/colder hunt.";
+/* Shown when the paywall follows the few seconds of live radar. */
+"paywall.radar.title.preview" = "Keep the radar running";
+"paywall.radar.subtitle.preview" = "That was the real thing — unlock it and it stays on for every search.";
 "paywall.radar.plan.name" = "Radar unlock";
 "paywall.radar.plan.period" = "one-time";
 "paywall.radar.cta" = "Unlock forever — %@";

@@ -17,8 +17,8 @@ struct RootView: View {
                 FinderDetectView()
                     .navigationDestination(for: AppRoute.self) { route in
                         switch route {
-                        case .radar:
-                            RadarView()
+                        case .radar(let preview):
+                            RadarView(isPreview: preview)
                         }
                     }
             }

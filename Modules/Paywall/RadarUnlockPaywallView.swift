@@ -8,20 +8,24 @@
 import SwiftUI
 
 struct RadarUnlockPaywallView: View {
+    /// Set when the paywall follows the live glimpse, so the copy can refer to
+    /// what the user just watched instead of describing it from scratch.
+    var followsPreview: Bool = false
+
     var body: some View {
         EntitlementPaywallView(
             entitlement: .radarUnlock,
-            content: Self.content,
+            content: Self.content(followsPreview: followsPreview),
             viewedEvent: AnalyticsEvent.radarPaywallViewed,
             purchasedEvent: AnalyticsEvent.radarPaywallPurchased,
             dismissedEvent: AnalyticsEvent.radarPaywallDismissed
         )
     }
 
-    private static var content: PaywallContent {
+    private static func content(followsPreview: Bool) -> PaywallContent {
         PaywallContent(
-            title: String(localized: "paywall.radar.title"),
-            subtitle: String(localized: "paywall.radar.subtitle"),
+            title: String(localized: followsPreview ? "paywall.radar.title.preview" : "paywall.radar.title"),
+            subtitle: String(localized: followsPreview ? "paywall.radar.subtitle.preview" : "paywall.radar.subtitle"),
             heroSystemImage: "dot.radiowaves.forward",
             benefits: [
                 PaywallBenefit(icon: "dot.radiowaves.left.and.right",

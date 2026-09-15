@@ -5,9 +5,9 @@
 import SwiftUI
 
 public enum AppRoute: Hashable {
-    /// The paid proximity screen. Reached from the finder once the radar is
-    /// unlocked; the paywall is presented as a sheet rather than a route.
-    case radar
+    /// The proximity screen. `preview` opens it as a timed glimpse for someone
+    /// who hasn't bought it yet — the paywall then slides up over the top.
+    case radar(preview: Bool)
 }
 
 @MainActor
@@ -18,4 +18,5 @@ public final class AppRouter: ObservableObject {
 
     public func reset() { path.removeLast(path.count) }
     public func push(_ route: AppRoute) { path.append(route) }
+    public func pop() { if !path.isEmpty { path.removeLast() } }
 }

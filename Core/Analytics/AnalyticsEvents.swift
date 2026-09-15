@@ -17,6 +17,9 @@ public enum AnalyticsEvent {
     public static let findSucceeded = "Finder.Find.Succeeded"
 
     // Paywall #1 — one-time radar unlock
+    /// The few seconds of live radar shown before the paywall. Compare against
+    /// `radarPaywallPurchased` to see whether the glimpse is earning its place.
+    public static let radarPreviewShown = "Paywall.Radar.PreviewShown"
     public static let radarPaywallViewed = "Paywall.Radar.Viewed"
     public static let radarPaywallPurchased = "Paywall.Radar.Purchased"
     public static let radarPaywallDismissed = "Paywall.Radar.Dismissed"

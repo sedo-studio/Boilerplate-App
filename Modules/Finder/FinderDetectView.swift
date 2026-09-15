@@ -18,7 +18,6 @@ struct FinderDetectView: View {
     @StateObject private var finder = BluetoothFinder.shared
 
     @State private var showDevicePicker = false
-    @State private var showRadarPaywall = false
     @State private var showAlertsPaywall = false
     @State private var didRecover = false
     @State private var scanStartedAt: Date?
@@ -40,9 +39,6 @@ struct FinderDetectView: View {
         .navigationTitle(Text("finder.title"))
         .sheet(isPresented: $showDevicePicker) {
             DevicePickerView(finder: finder)
-        }
-        .sheet(isPresented: $showRadarPaywall, onDismiss: handlePaywallDismiss) {
-            RadarUnlockPaywallView()
         }
         .sheet(isPresented: $showAlertsPaywall) {
             LeftBehindPaywallView()
@@ -183,16 +179,10 @@ struct FinderDetectView: View {
         finder.startScan()
     }
 
+    /// Locked users get the real radar for a few seconds before the paywall —
+    /// the feature argues for itself better than a screenshot of it does.
     private func openRadar() {
-        if entitlements.isRadarUnlocked {
-            router.push(.radar)
-        } else {
-            showRadarPaywall = true
-        }
-    }
-
-    private func handlePaywallDismiss() {
-        if entitlements.isRadarUnlocked { router.push(.radar) }
+        router.push(.radar(preview: !entitlements.isRadarUnlocked))
     }
 
     private func confirmRecovered() {

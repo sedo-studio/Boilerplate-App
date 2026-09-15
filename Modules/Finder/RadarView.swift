@@ -12,13 +12,32 @@
 import SwiftUI
 
 struct RadarView: View {
+    /// Opened as a timed glimpse for someone who hasn't unlocked it.
+    var isPreview: Bool = false
+
     @Environment(\.container) private var container
     @EnvironmentObject private var entitlements: Entitlements
+    @EnvironmentObject private var router: AppRouter
     @StateObject private var finder = BluetoothFinder.shared
 
     @State private var pulse = false
     @State private var openedAt = Date()
     @State private var showAlertsPaywall = false
+    @State private var showRadarPaywall = false
+    @State private var previewTimer: Task<Void, Never>?
+    @State private var didStartLiveCountdown = false
+
+    /// Seconds of *live signal* the glimpse runs for. Counted from the first
+    /// real reading, not from screen-open: the smoother needs four samples
+    /// before it will say warmer or colder, so a timer that started on appear
+    /// would mostly show the warm-up state.
+    private let previewSeconds: Double = 4
+    /// Backstop for a device that never answers, so nobody is stranded on a
+    /// dead dial waiting for a paywall that never comes.
+    private let previewCapSeconds: Double = 9
+
+    /// True while this is still a glimpse. Buying flips it off immediately.
+    private var isGlimpse: Bool { isPreview && !entitlements.isRadarUnlocked }
 
     var body: some View {
         ZStack {
@@ -36,7 +55,16 @@ struct RadarView: View {
                           pulse: $pulse)
 
                 VStack(spacing: DS.Spacing.sm) {
-                    DSEyebrow(finder.hasLiveReading ? "radar.eyebrow.live" : "radar.eyebrow.warmup")
+                    if isGlimpse {
+                        Text("radar.preview.chip")
+                            .appFont(.captionBold)
+                            .foregroundStyle(DS.accent)
+                            .padding(.horizontal, DS.Spacing.md)
+                            .padding(.vertical, DS.Spacing.xs)
+                            .background(Capsule().fill(DS.accent.opacity(0.15)))
+                    } else {
+                        DSEyebrow(finder.hasLiveReading ? "radar.eyebrow.live" : "radar.eyebrow.warmup")
+                    }
 
                     if finder.hasLiveReading {
                         Text(LocalizedStringKey(finder.proximity.titleKey))
@@ -62,8 +90,15 @@ struct RadarView: View {
                 Spacer(minLength: 0)
 
                 VStack(spacing: DS.Spacing.md) {
-                    Button("radar.gotthem") { confirmRecovered() }
-                        .buttonStyle(DSPrimaryButtonStyle())
+                    if isGlimpse {
+                        Text("radar.preview.note")
+                            .appFont(.footnote)
+                            .foregroundStyle(DS.Colors.textSecondary)
+                            .multilineTextAlignment(.center)
+                    } else {
+                        Button("radar.gotthem") { confirmRecovered() }
+                            .buttonStyle(DSPrimaryButtonStyle())
+                    }
 
                     Text("radar.disclaimer")
                         .appFont(.caption)
@@ -77,12 +112,26 @@ struct RadarView: View {
         .navigationTitle(Text("radar.title"))
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showAlertsPaywall) { LeftBehindPaywallView() }
+        .sheet(isPresented: $showRadarPaywall, onDismiss: handleRadarPaywallDismiss) {
+            RadarUnlockPaywallView(followsPreview: true)
+        }
         .onAppear {
             openedAt = Date()
             pulse = true
             finder.startProximityTracking()
+            beginGlimpse()
         }
-        .onDisappear { finder.stopProximityTracking() }
+        .onChange(of: finder.hasLiveReading) { isLive in
+            // The glimpse is measured in seconds of real signal.
+            guard isGlimpse, isLive, !didStartLiveCountdown else { return }
+            didStartLiveCountdown = true
+            schedulePaywall(after: previewSeconds)
+        }
+        .onDisappear {
+            previewTimer?.cancel()
+            previewTimer = nil
+            finder.stopProximityTracking()
+        }
     }
 
     /// 0 (faint) → 1 (very close). Held low until a real reading lands.
@@ -92,6 +141,34 @@ struct RadarView: View {
 
     private var tint: Color {
         DS.Colors.blend(DS.cool, DS.warm, amount: finder.hasLiveReading ? finder.proximity.intensity : 0)
+    }
+
+    // MARK: - Glimpse
+
+    private func beginGlimpse() {
+        guard isGlimpse else { return }
+        container.analytics.track(AnalyticsEvent.radarPreviewShown)
+        schedulePaywall(after: previewCapSeconds)
+    }
+
+    private func schedulePaywall(after seconds: Double) {
+        previewTimer?.cancel()
+        previewTimer = Task {
+            try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+            guard !Task.isCancelled, isGlimpse else { return }
+            showRadarPaywall = true
+        }
+    }
+
+    /// Bought → stay on the now-unlocked radar. Declined → back to the finder,
+    /// rather than leaving them parked on a screen they can't use.
+    private func handleRadarPaywallDismiss() {
+        if entitlements.isRadarUnlocked {
+            previewTimer?.cancel()
+            previewTimer = nil
+        } else {
+            router.pop()
+        }
     }
 
     private func confirmRecovered() {
@@ -201,6 +278,7 @@ private struct RadarDial: View {
 struct RadarView_Previews: PreviewProvider {
     static var previews: some View {
         NavigationStack { RadarView() }
+            .environmentObject(AppRouter())
             .environmentObject(Entitlements(purchases: LocalPurchasesService(), flags: .default))
             .preferredColorScheme(.dark)
     }
