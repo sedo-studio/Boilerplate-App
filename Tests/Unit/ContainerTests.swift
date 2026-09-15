@@ -3,7 +3,7 @@
 //
 
 import XCTest
-@testable import TheSwiftKit
+@testable import FindMyHeadphones
 
 final class ContainerTests: XCTestCase {
     func testContainerBuilds() throws {

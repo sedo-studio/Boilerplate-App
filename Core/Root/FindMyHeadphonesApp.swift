@@ -1,11 +1,11 @@
 //
-//  TheSwiftKitApp.swift
+//  FindMyHeadphonesApp.swift
 //
 
 import SwiftUI
 
 @main
-struct TheSwiftKitApp: App {
+struct FindMyHeadphonesApp: App {
     private let container: DIContainer
     @StateObject private var router = AppRouter()
     @StateObject private var entitlements: Entitlements

@@ -1,4 +1,4 @@
-name: TheSwiftKit
+name: FindMyHeadphones
 options:
   deploymentTarget:
     iOS: '16.0'
@@ -9,8 +9,12 @@ settings:
   base:
     SWIFT_VERSION: 5.9
     IPHONEOS_DEPLOYMENT_TARGET: 16.0
+    # Signing lives here rather than in Xcode's UI: the .xcodeproj is
+    # regenerated from this file, which would wipe anything set by hand.
+    DEVELOPMENT_TEAM: RHHZ3ABR92
+    CODE_SIGN_STYLE: Automatic
 targets:
-  TheSwiftKit:
+  FindMyHeadphones:
     type: application
     platform: iOS
     dependencies:
@@ -45,20 +49,20 @@ targets:
           - en
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.agaganorg.theswiftkit
+        PRODUCT_BUNDLE_IDENTIFIER: com.francisgane.findmyheadphones
         CURRENT_PROJECT_VERSION: 1
         MARKETING_VERSION: 1.0
     scheme:
       testTargets:
-        - name: TheSwiftKitTests
+        - name: FindMyHeadphonesTests
 
-  TheSwiftKitTests:
+  FindMyHeadphonesTests:
     type: bundle.unit-test
     platform: iOS
     sources:
       - path: Tests
     dependencies:
-      - target: TheSwiftKit
+      - target: FindMyHeadphones
 
 packages:
   TelemetryDeck:

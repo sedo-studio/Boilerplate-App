@@ -64,15 +64,16 @@ app from the over-promising competition.
 5. **Keep the project SDK-optional.** Wrap third-party SDK code in
    `#if canImport(...)` with a working fallback, so the app compiles with no
    packages linked.
-6. **Don't edit `TheSwiftKit.xcodeproj/`.** It is generated from `project.yml`.
-   Change `project.yml` and run `xcodegen generate`.
+6. **Never edit the `.xcodeproj`.** It is generated from `project.yml` and is
+   gitignored. Anything set in Xcode's UI — signing team, bundle id, build
+   settings — is wiped on the next `xcodegen generate`. Change `project.yml`
+   instead; that is where `DEVELOPMENT_TEAM` and the bundle id live.
 7. **`Config/Secrets.swift` is gitignored and generated.** Never commit it. The
    committed template is `Config/Secrets.sample.swift`.
-8. **`__PLACEHOLDER__` tokens are intentional.** `__APP_NAME__`,
-   `__BUNDLE_ID__`, `__PRIVACY_URL__`, `__TERMS_URL__` and
-   `__TESTFLIGHT_APP_ID__` are replaced by `./setup.sh`. Don't hand-replace
-   them. The **brand palette is not a placeholder** — it is fixed in
-   `DesignSystem.swift`, because the whole UI is tuned around it.
+8. **There are no `__PLACEHOLDER__` tokens.** App identity is fixed in
+   `AppConfig.swift`, the palette in `DesignSystem.swift`, signing and bundle
+   id in `project.yml`. `setup.sh` only writes `Secrets.swift` — it never
+   rewrites a tracked file, which is what keeps `git pull` clean.
 
 ---
 
@@ -85,17 +86,17 @@ When a real toolchain is available:
 ```bash
 xcodegen generate            # after changing project.yml or adding files
 
-xcodebuild -project TheSwiftKit.xcodeproj -scheme TheSwiftKit \
+xcodebuild -project FindMyHeadphones.xcodeproj -scheme FindMyHeadphones \
   -destination 'platform=iOS Simulator,name=iPhone 15' build
 
-xcodebuild -project TheSwiftKit.xcodeproj -scheme TheSwiftKit \
+xcodebuild -project FindMyHeadphones.xcodeproj -scheme FindMyHeadphones \
   -destination 'platform=iOS Simulator,name=iPhone 15' test
 ```
 
 - **Adding a `.swift` file:** XcodeGen globs whole folders (`Config`, `Core`,
   `Modules`, `Resources`). Drop the file in the right folder and run
   `xcodegen generate` — never hand-edit the `pbxproj`.
-- **Tests** live in `Tests/` (XCTest, `@testable import TheSwiftKit`). The
+- **Tests** live in `Tests/` (XCTest, `@testable import FindMyHeadphones`). The
   finder's logic is deliberately split into pure value types
   (`FinderModels.swift`) so it is testable without CoreBluetooth or a device.
   **Bluetooth behaviour itself cannot be unit-tested or simulated** — the
@@ -108,12 +109,12 @@ xcodebuild -project TheSwiftKit.xcodeproj -scheme TheSwiftKit \
 
 ```
 Config/
-  AppConfig.swift        # app identity, branding, feature flags, legal links
+  AppConfig.swift        # app name, bundle id, feature flags, legal links
   FeatureFlags.swift     # the 4 flags
   Secrets.sample.swift   # template; Secrets.swift is generated + gitignored
 
 Core/
-  Root/                  # @main entry (TheSwiftKitApp) + RootView (TabView)
+  Root/                  # @main entry (FindMyHeadphonesApp) + RootView (TabView)
   Routing/               # AppRoute + AppRouter
   DI/                    # DIContainer (struct) + environment plumbing
   Services/              # PurchasesService, Entitlements, RatingService
@@ -133,9 +134,8 @@ Modules/
 
 Resources/               # Assets, Info.plist, Base.lproj + en.lproj
 Tests/                   # XCTest unit tests
-setup.sh                 # interactive + JSON-driven setup wizard
-setup-config.json        # non-interactive setup input
-project.yml              # XcodeGen spec
+setup.sh                 # writes Secrets.swift + runs xcodegen (keys only)
+project.yml              # XcodeGen spec — signing, bundle id, Info.plist
 ```
 
 ---
@@ -287,9 +287,8 @@ key sells nothing rather than giving the app away.
 | `leftBehindAlerts` | the alerts feature and its subscription |
 | `reviewPrompt` | ask for a review after a successful find |
 
-The finder itself is never flagged — it is the app. `setup.sh` rewrites the
-whole `featureFlags:` line, so **if you add a flag, add it to `setup.sh` too**
-or the wizard will silently drop it.
+The finder itself is never flagged — it is the app. Flags are edited directly
+in `AppConfig.default`; nothing generates that line.
 
 ---
 

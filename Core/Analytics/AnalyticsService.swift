@@ -1,6 +1,6 @@
 //
 //  AnalyticsService.swift
-//  TheSwiftKit
+//  Find My Headphones
 //
 
 import Foundation

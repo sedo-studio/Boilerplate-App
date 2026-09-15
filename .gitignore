@@ -10,3 +10,9 @@ Backend/Python/.env
 DerivedData/
 build/
 .DS_Store
+
+# Generated Xcode project — rebuild with `xcodegen generate`
+*.xcodeproj/
+
+# setup.sh backups
+.setup-backup-*/

@@ -5,7 +5,7 @@
 //
 
 import XCTest
-@testable import TheSwiftKit
+@testable import FindMyHeadphones
 
 final class ProximityLevelTests: XCTestCase {
     func testBucketsCoverTheUsefulRange() {

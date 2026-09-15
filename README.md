@@ -39,14 +39,14 @@ plainly in the app itself, not buried here.
 ## Getting started
 
 ```bash
-./setup.sh                              # interactive
-./setup.sh --config setup-config.json   # non-interactive
-xcodegen generate
-open TheSwiftKit.xcodeproj
+brew install xcodegen     # once
+./setup.sh                # writes Config/Secrets.swift, generates the project
+open FindMyHeadphones.xcodeproj
 ```
 
-`setup.sh` stamps the app name, bundle id, brand colors, App Store id and legal
-URLs, writes the gitignored `Config/Secrets.swift`, and sets the feature flags.
+`setup.sh` only asks for API keys. Leave both blank and the app still runs —
+purchases fall back to a local stub in debug builds and analytics go no-op.
+With keys already set, `xcodegen generate` on its own is enough.
 
 > **Bluetooth needs a real device.** The iOS Simulator has no Bluetooth stack,
 > so the finder does nothing there. Everything else — onboarding, paywalls,
@@ -55,11 +55,13 @@ URLs, writes the gitignored `Config/Secrets.swift`, and sets the feature flags.
 
 ## Configuration
 
-- `Config/AppConfig.swift` — identity, branding, feature flags, legal links.
+- `Config/AppConfig.swift` — app name, bundle id, feature flags, legal links.
 - `Config/FeatureFlags.swift` — `onboarding`, `radarUnlock`, `leftBehindAlerts`,
   `reviewPrompt`. Turning `radarUnlock` off makes the radar free, which is handy
   for TestFlight builds and App Review screenshots.
 - `Core/Theme/DesignSystem.swift` — every colour, spacing and radius token.
+- `project.yml` — signing team, bundle id, Info.plist keys. The `.xcodeproj` is
+  generated from it and gitignored, so edit this rather than Xcode's UI.
 - `Config/Secrets.swift` — RevenueCat and TelemetryDeck keys. Generated,
   gitignored, never committed.
 
@@ -102,7 +104,7 @@ Architecture notes and the rules for contributing live in
 ## Tests
 
 ```bash
-xcodebuild -project TheSwiftKit.xcodeproj -scheme TheSwiftKit \
+xcodebuild -project FindMyHeadphones.xcodeproj -scheme FindMyHeadphones \
   -destination 'platform=iOS Simulator,name=iPhone 15' test
 ```
 
