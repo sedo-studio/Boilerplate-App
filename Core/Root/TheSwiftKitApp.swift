@@ -11,8 +11,8 @@ struct TheSwiftKitApp: App {
     @StateObject private var entitlements: Entitlements
 
     @AppStorage("appThemeStyle") private var themeStyleRaw: String = DS.surfaceStyle.rawValue
-    @AppStorage("appearanceDark") private var appearanceDark: Bool = false
-    @AppStorage("appearanceLocked") private var appearanceLocked: Bool = false
+    @AppStorage("appearanceDark") private var appearanceDark: Bool = true
+    @AppStorage("appearanceLocked") private var appearanceLocked: Bool = true
 
     init() {
         let container = DIContainer.makeDefault()

@@ -12,8 +12,8 @@ struct SettingsView: View {
     @StateObject private var finder = BluetoothFinder.shared
     @StateObject private var scheduler = ReminderScheduler.shared
 
-    @AppStorage("appearanceDark") private var appearanceDark: Bool = false
-    @AppStorage("appearanceLocked") private var appearanceLocked: Bool = false
+    @AppStorage("appearanceDark") private var appearanceDark: Bool = true
+    @AppStorage("appearanceLocked") private var appearanceLocked: Bool = true
 
     @State private var showRadarPaywall = false
     @State private var showAlertsPaywall = false
@@ -31,6 +31,9 @@ struct SettingsView: View {
                 purchasesSection
                 appearanceSection
                 aboutSection
+                #if DEBUG
+                developerSection
+                #endif
             }
             .navigationTitle(Text("settings.title"))
             .sheet(isPresented: $showRadarPaywall) { RadarUnlockPaywallView() }
@@ -166,6 +169,31 @@ struct SettingsView: View {
             Text("settings.about.footer")
         }
     }
+
+    #if DEBUG
+    /// Never ships. The simulator has no Bluetooth radio, so demo mode is the
+    /// only way to review the finder screens without a phone and headphones.
+    private var developerSection: some View {
+        Section {
+            Toggle(isOn: Binding(get: { finder.isDemoMode },
+                                 set: { finder.setDemoMode($0) })) {
+                Label("settings.dev.demo", systemImage: "wand.and.stars")
+            }
+            Button {
+                if let local = container.purchasesService as? LocalPurchasesService {
+                    local.resetLocalPurchases()
+                    Task { await entitlements.reload() }
+                }
+            } label: {
+                Label("settings.dev.resetpurchases", systemImage: "arrow.uturn.backward")
+            }
+        } header: {
+            Text("settings.dev.section")
+        } footer: {
+            Text("settings.dev.footer")
+        }
+    }
+    #endif
 
     // MARK: - Intent
 

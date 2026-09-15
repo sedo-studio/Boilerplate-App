@@ -69,9 +69,10 @@ app from the over-promising competition.
 7. **`Config/Secrets.swift` is gitignored and generated.** Never commit it. The
    committed template is `Config/Secrets.sample.swift`.
 8. **`__PLACEHOLDER__` tokens are intentional.** `__APP_NAME__`,
-   `__BUNDLE_ID__`, `__PRIMARY_COLOR__`, `__ACCENT_COLOR__`, `__PRIVACY_URL__`,
-   `__TERMS_URL__` and `__TESTFLIGHT_APP_ID__` are replaced by `./setup.sh`.
-   Don't hand-replace them.
+   `__BUNDLE_ID__`, `__PRIVACY_URL__`, `__TERMS_URL__` and
+   `__TESTFLIGHT_APP_ID__` are replaced by `./setup.sh`. Don't hand-replace
+   them. The **brand palette is not a placeholder** — it is fixed in
+   `DesignSystem.swift`, because the whole UI is tuned around it.
 
 ---
 
@@ -189,7 +190,8 @@ All theming flows from `Core/Theme/DesignSystem.swift` (the `DS` namespace).
 
 | Need | Use |
 |---|---|
-| Brand color | `DS.primary`, `DS.accent` |
+| Brand color | `DS.primary` (lilac), `DS.accent` (periwinkle) |
+| Proximity temperature | `DS.cool` → `DS.warm`, mixed with `DS.Colors.blend` |
 | Status | `DS.success`, `DS.warning`, `DS.danger`, `DS.info` |
 | Text | `DS.Colors.textPrimary` / `.textSecondary` / `.textTertiary` |
 | Spacing | `DS.Spacing.xs sm md lg xl xxl xxxl` |
@@ -197,8 +199,15 @@ All theming flows from `Core/Theme/DesignSystem.swift` (the `DS` namespace).
 | Motion | `DS.Motion.fast/.normal/.slow`, `DS.Motion.spring` |
 
 Typography: never call `.font(...)` with a system font — use `.appFont(_:)`
-with an `AppTextStyle` case. Surfaces: `.dsCard()`, `.dsCardContent()`,
-`.dsInput()`, `DSPrimaryButtonStyle()` and friends.
+with an `AppTextStyle` case, and `DSEyebrow` for the small tracked uppercase
+label above a heading. Surfaces: `.dsCard()`, `.dsCardContent()`, `.dsInput()`,
+`DSPrimaryButtonStyle()` and friends.
+
+**The look:** dark-first (the app defaults to dark and the neutral scale is
+indigo-tinted, not grey), translucent `.glass` cards over a slow drifting
+`AnimatedBackground`, and soft blurred glows rather than hard strokes. When
+adding a lit element, reach for a blurred radial gradient plus a coloured
+shadow — that is the visual language the radar and the finder cards share.
 
 ---
 

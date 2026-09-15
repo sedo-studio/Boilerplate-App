@@ -61,6 +61,8 @@
 
 /* MARK: - Radar (paid) */
 "radar.title" = "Proximity";
+"radar.eyebrow.live" = "Signal · live";
+"radar.eyebrow.warmup" = "Signal · listening";
 "radar.warmup.title" = "Listening…";
 "radar.warmup.body" = "Hold still for a moment while we take a few readings.";
 "radar.gotthem" = "I've got them";
@@ -159,3 +161,9 @@
 "settings.privacy" = "Privacy policy";
 "settings.terms" = "Terms of use";
 "settings.about.footer" = "This app finds headphones by Bluetooth signal strength. It cannot show direction, and it cannot find headphones that are switched off, flat, or out of range.";
+
+/* MARK: - Developer (debug builds only) */
+"settings.dev.section" = "Developer";
+"settings.dev.demo" = "Simulator demo mode";
+"settings.dev.resetpurchases" = "Reset test purchases";
+"settings.dev.footer" = "Demo mode feeds a fake device and a drifting signal so the finder and radar can be reviewed without Bluetooth. Debug builds only.";

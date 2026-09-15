@@ -46,6 +46,11 @@ final class BluetoothFinder: NSObject, ObservableObject {
     private var scanTimeout: Task<Void, Never>?
     private var rssiPoll: Task<Void, Never>?
 
+    #if DEBUG
+    @Published private(set) var isDemoMode: Bool = false
+    fileprivate var demoTask: Task<Void, Never>?
+    #endif
+
     private let savedIdKey = "finder.device.id"
     private let savedNameKey = "finder.device.name"
     private let scanWindow: TimeInterval = 15
@@ -55,12 +60,20 @@ final class BluetoothFinder: NSObject, ObservableObject {
 
     private override init() {
         super.init()
-        // Restore the saved device so background connect/disconnect events and
-        // the radar work after a cold launch, before any scan has run.
-        if let id = UserDefaults.standard.string(forKey: savedIdKey).flatMap(UUID.init(uuidString:)) {
-            let name = UserDefaults.standard.string(forKey: savedNameKey) ?? ""
-            trackedDevice = DiscoveredDevice(id: id, name: name, rssi: nil)
+        restoreSavedDevice()
+    }
+
+    /// Rebuilds `trackedDevice` from what was saved, so background
+    /// connect/disconnect events and the radar work after a cold launch,
+    /// before any scan has run.
+    fileprivate func restoreSavedDevice() {
+        guard let id = savedDeviceId else {
+            trackedDevice = nil
+            return
         }
+        trackedDevice = DiscoveredDevice(id: id,
+                                         name: UserDefaults.standard.string(forKey: savedNameKey) ?? "",
+                                         rssi: nil)
     }
 
     /// Devices whose name reads like headphones — what the main UI offers.
@@ -122,12 +135,14 @@ final class BluetoothFinder: NSObject, ObservableObject {
     // MARK: - Scanning
 
     func startScan() {
+        #if DEBUG
+        if isDemoMode { runDemoScan(); return }
+        #endif
         prepare()
         guard let central else { return }
 
         candidates = []
-        smoother.reset()
-        hasLiveReading = false
+        resetSignal()
 
         switch central.state {
         case .poweredOn:
@@ -180,8 +195,20 @@ final class BluetoothFinder: NSObject, ObservableObject {
     }
 
     func stopScan() {
+        // The radar runs its own scan. Leaving the detect screen to open it
+        // fires this, and tearing the scan down would starve the radar.
+        guard !isTrackingProximity else { return }
+
         scanTimeout?.cancel()
         scanTimeout = nil
+        #if DEBUG
+        if isDemoMode {
+            demoTask?.cancel()
+            demoTask = nil
+            if case .scanning = state { state = .idle }
+            return
+        }
+        #endif
         central?.stopScan()
         if case .scanning = state { state = .idle }
     }
@@ -219,13 +246,19 @@ final class BluetoothFinder: NSObject, ObservableObject {
     // MARK: - Proximity tracking (radar)
 
     func startProximityTracking() {
+        #if DEBUG
+        if isDemoMode {
+            isTrackingProximity = true
+            startDemoFeed()
+            return
+        }
+        #endif
         guard let device = trackedDevice else { return }
         prepare()
         guard let central else { return }
 
         isTrackingProximity = true
-        smoother.reset()
-        hasLiveReading = false
+        resetSignal()
 
         if central.state == .poweredOn {
             central.scanForPeripherals(
@@ -255,6 +288,12 @@ final class BluetoothFinder: NSObject, ObservableObject {
     }
 
     func stopProximityTracking() {
+        #if DEBUG
+        if isDemoMode {
+            isTrackingProximity = false
+            return
+        }
+        #endif
         isTrackingProximity = false
         rssiPoll?.cancel()
         rssiPoll = nil
@@ -304,7 +343,16 @@ final class BluetoothFinder: NSObject, ObservableObject {
         if let rssi { ingestRSSI(rssi) }
     }
 
-    private func ingestRSSI(_ rssi: Int) {
+    /// Drops every reading taken so far, so a new scan never shows the last
+    /// one's proximity while it warms up.
+    fileprivate func resetSignal() {
+        smoother.reset()
+        hasLiveReading = false
+        proximity = .far
+        trend = .steady
+    }
+
+    fileprivate func ingestRSSI(_ rssi: Int) {
         smoother.add(rssi)
         guard let level = smoother.proximity else { return }
         hasLiveReading = true
@@ -312,6 +360,68 @@ final class BluetoothFinder: NSObject, ObservableObject {
         trend = smoother.trend
     }
 }
+
+#if DEBUG
+// MARK: - Simulator demo mode
+//
+// The simulator has no Bluetooth radio, so without this every finder screen is
+// stuck on "Not supported" and the UI can't be reviewed. Feeds a synthetic
+// signal that sweeps the whole range, so each proximity bucket and both trends
+// appear within about half a minute. Never compiled into a release build.
+
+extension BluetoothFinder {
+    private static let demoDeviceID = UUID(uuidString: "11111111-2222-3333-4444-555555555555")!
+
+    func setDemoMode(_ enabled: Bool) {
+        isDemoMode = enabled
+        demoTask?.cancel()
+        demoTask = nil
+        resetSignal()
+
+        if enabled {
+            // Never persisted, so the user's real saved device survives.
+            let device = DiscoveredDevice(id: Self.demoDeviceID,
+                                          name: "Demo AirPods Pro",
+                                          rssi: -72)
+            candidates = [device]
+            trackedDevice = device
+        } else {
+            candidates = []
+            restoreSavedDevice()
+        }
+        state = .idle
+    }
+
+    fileprivate func runDemoScan() {
+        demoTask?.cancel()
+        demoTask = nil
+        resetSignal()
+        state = .scanning
+
+        Task { [weak self] in
+            try? await Task.sleep(nanoseconds: 2_000_000_000)
+            guard let self, self.isDemoMode, case .scanning = self.state else { return }
+            if let device = self.trackedDevice { self.state = .found(device) }
+            self.startDemoFeed()
+        }
+    }
+
+    fileprivate func startDemoFeed() {
+        guard demoTask == nil else { return }
+        demoTask = Task { [weak self] in
+            var tick = 0.0
+            while !Task.isCancelled {
+                guard let self, self.isDemoMode else { return }
+                // Sweeps roughly -92…-44 dBm, so the dial travels the full
+                // cool → warm ramp and back.
+                self.ingestRSSI(Int(-68.0 + 24.0 * sin(tick)))
+                tick += 0.18
+                try? await Task.sleep(nanoseconds: 500_000_000)
+            }
+        }
+    }
+}
+#endif
 
 // MARK: - CBCentralManagerDelegate
 

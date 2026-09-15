@@ -234,20 +234,31 @@ private struct FinderStatusCard: View {
     var body: some View {
         VStack(spacing: DS.Spacing.lg) {
             ZStack {
+                // Soft bloom, same visual language as the radar.
+                Circle()
+                    .fill(RadialGradient(colors: [tint.opacity(0.45), tint.opacity(0)],
+                                         center: .center, startRadius: 0, endRadius: 90))
+                    .frame(width: 180, height: 180)
+                    .blur(radius: 24)
+
                 if isAnimating {
                     Circle()
-                        .stroke(tint.opacity(0.35), lineWidth: 2)
+                        .stroke(tint.opacity(0.35), lineWidth: 1.5)
                         .frame(width: 140, height: 140)
-                        .scaleEffect(pulse ? 1.25 : 0.85)
+                        .blur(radius: 2)
+                        .scaleEffect(pulse ? 1.3 : 0.8)
                         .opacity(pulse ? 0 : 1)
-                        .animation(.easeOut(duration: 1.6).repeatForever(autoreverses: false), value: pulse)
+                        .animation(.easeOut(duration: 1.8).repeatForever(autoreverses: false), value: pulse)
                 }
+
                 Circle()
                     .fill(tint.opacity(0.14))
                     .frame(width: 104, height: 104)
+
                 Image(systemName: systemImage)
                     .font(.system(size: 42, weight: .semibold))
                     .foregroundStyle(tint)
+                    .shadow(color: tint.opacity(0.6), radius: 14)
             }
             .frame(height: 150)
 
@@ -274,10 +285,16 @@ private struct FoundCard: View {
     var body: some View {
         VStack(spacing: DS.Spacing.lg) {
             ZStack {
+                Circle()
+                    .fill(RadialGradient(colors: [DS.success.opacity(0.45), DS.success.opacity(0)],
+                                         center: .center, startRadius: 0, endRadius: 90))
+                    .frame(width: 180, height: 180)
+                    .blur(radius: 24)
                 Circle().fill(DS.success.opacity(0.15)).frame(width: 104, height: 104)
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 46, weight: .semibold))
                     .foregroundStyle(DS.success)
+                    .shadow(color: DS.success.opacity(0.6), radius: 14)
             }
             .frame(height: 130)
 

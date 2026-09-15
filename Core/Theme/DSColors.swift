@@ -113,6 +113,25 @@ extension DS {
 
         // MARK: Helpers
 
+        /// Mixes two colors. `amount` 0 returns `from`, 1 returns `to`.
+        /// The radar uses this to ramp cool → warm as the signal strengthens.
+        public static func blend(_ from: Color, _ to: Color, amount: Double) -> Color {
+            #if canImport(UIKit)
+            let t = min(max(amount, 0), 1)
+            var r1: CGFloat = 0, g1: CGFloat = 0, b1: CGFloat = 0, a1: CGFloat = 0
+            var r2: CGFloat = 0, g2: CGFloat = 0, b2: CGFloat = 0, a2: CGFloat = 0
+            UIColor(from).getRed(&r1, green: &g1, blue: &b1, alpha: &a1)
+            UIColor(to).getRed(&r2, green: &g2, blue: &b2, alpha: &a2)
+            return Color(.sRGB,
+                         red: Double(r1 + (r2 - r1) * t),
+                         green: Double(g1 + (g2 - g1) * t),
+                         blue: Double(b1 + (b2 - b1) * t),
+                         opacity: Double(a1 + (a2 - a1) * t))
+            #else
+            return amount < 0.5 ? from : to
+            #endif
+        }
+
         /// Returns white or black depending on which provides better contrast
         /// against the given hex background.
         private static func contrastForeground(for hex: String) -> Color {

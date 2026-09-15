@@ -149,6 +149,20 @@ public extension View {
 // MARK: - Empty State View
 
 /// Reusable empty state placeholder.
+/// Small tracked, uppercase label that sits above a heading.
+public struct DSEyebrow: View {
+    private let text: LocalizedStringKey
+    public init(_ text: LocalizedStringKey) { self.text = text }
+
+    public var body: some View {
+        Text(text)
+            .appFont(.caption)
+            .textCase(.uppercase)
+            .tracking(1.8)
+            .foregroundStyle(DS.Colors.textSecondary)
+    }
+}
+
 public struct DSEmptyState: View {
     public let title: String
     public let systemImage: String

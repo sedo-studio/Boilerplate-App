@@ -28,8 +28,16 @@ public enum DS {
     // Your app's identity. Change these two to rebrand instantly.
     // =================================================================
 
-    public static let primaryHex: String = "__PRIMARY_COLOR__"
-    public static let accentHex: String  = "__ACCENT_COLOR__"
+    // Fixed brand palette — deep indigo ground, one periwinkle action colour.
+    // Not a setup.sh placeholder: this app has a settled identity, and the
+    // whole UI (glow, gradients, cards) is tuned around these two values.
+    public static let primaryHex: String = "#8E7CFF"   // lilac — gradients, glow
+    public static let accentHex: String  = "#6C5CE7"   // periwinkle — buttons, rings
+
+    // Proximity temperature. The radar blends cool → warm as the signal
+    // strengthens, which is the visual form of "getting warmer".
+    public static let coolHex: String = "#5B7CFF"
+    public static let warmHex: String = "#FF6B8A"
 
     // =================================================================
     // NEUTRAL PALETTE
@@ -37,16 +45,18 @@ public enum DS {
     // Adjust for a warmer or cooler feel.
     // =================================================================
 
-    public static let neutral50Hex  = "#FAFAFA"
-    public static let neutral100Hex = "#F5F5F5"
-    public static let neutral200Hex = "#E5E5E5"
-    public static let neutral300Hex = "#D4D4D4"
-    public static let neutral400Hex = "#A3A3A3"
-    public static let neutral500Hex = "#737373"
-    public static let neutral600Hex = "#525252"
-    public static let neutral700Hex = "#404040"
-    public static let neutral800Hex = "#262626"
-    public static let neutral900Hex = "#171717"
+    // Indigo-tinted rather than pure grey, so dark mode reads as deep space
+    // instead of black. 800/900 are the dark surfaces and background.
+    public static let neutral50Hex  = "#F7F6FC"
+    public static let neutral100Hex = "#EFEDF8"
+    public static let neutral200Hex = "#DEDAEE"
+    public static let neutral300Hex = "#C6C1DF"
+    public static let neutral400Hex = "#A39FC4"
+    public static let neutral500Hex = "#6F6A8F"
+    public static let neutral600Hex = "#4A4470"
+    public static let neutral700Hex = "#272348"
+    public static let neutral800Hex = "#191634"
+    public static let neutral900Hex = "#0C0A18"
 
     // =================================================================
     // FEEDBACK COLORS
@@ -69,7 +79,7 @@ public enum DS {
     //   .liquidGlass  — Apple Liquid Glass (iOS 26+, falls back to .glass)
     // =================================================================
 
-    public static let surfaceStyle: SurfaceStyle = .elevated
+    public static let surfaceStyle: SurfaceStyle = .glass
 
     // =================================================================
     // SPACING DENSITY
@@ -163,6 +173,9 @@ public enum DS {
 
     public static var primary: Color { Color(hex: primaryHex) ?? .purple }
     public static var accent:  Color { Color(hex: accentHex) ?? .orange }
+
+    public static var cool: Color { Color(hex: coolHex) ?? .blue }
+    public static var warm: Color { Color(hex: warmHex) ?? .pink }
 
     public static var success: Color { Color(hex: successHex) ?? .green }
     public static var warning: Color { Color(hex: warningHex) ?? .yellow }

@@ -49,9 +49,7 @@ dim()     { printf "${DIM}%s${RESET}\n" "$1"; }
 # ---------------------------------------------------------------------------
 DEFAULT_APP_NAME="My App"
 DEFAULT_BUNDLE_ID="com.example.myapp"
-DEFAULT_PRIMARY_COLOR="#8A2BE2"
-DEFAULT_ACCENT_COLOR="#FF8A00"
-DEFAULT_SURFACE_STYLE="elevated"
+DEFAULT_SURFACE_STYLE="glass"
 DEFAULT_SPACING_DENSITY="1.0"
 DEFAULT_FEAT_ONBOARDING="true"
 DEFAULT_FEAT_RADAR_UNLOCK="true"
@@ -64,7 +62,7 @@ DEFAULT_PRIVACY_URL="https://example.com/privacy"
 DEFAULT_TERMS_URL="https://example.com/terms"
 
 # Values to be collected
-APP_NAME="" BUNDLE_ID="" PRIMARY_COLOR="" ACCENT_COLOR=""
+APP_NAME="" BUNDLE_ID=""
 SURFACE_STYLE="" SPACING_DENSITY=""
 FEAT_ONBOARDING="" FEAT_RADAR_UNLOCK="" FEAT_LEFT_BEHIND="" FEAT_REVIEW=""
 REVENUECAT_KEY="" TELEMETRY_ID="" TESTFLIGHT_ID=""
@@ -179,7 +177,7 @@ BANNER
 collect_values() {
     # ── 1. App Identity ──
     echo ""
-    info "── 1/6  App Identity ──"
+    info "── 1/5  App Identity ──"
     echo ""
     prompt_value APP_NAME  "App name" "$DEFAULT_APP_NAME"
     prompt_value BUNDLE_ID "Bundle identifier" "$DEFAULT_BUNDLE_ID" bundle_id
@@ -187,16 +185,10 @@ collect_values() {
     echo ""
 
     # ── 2. Branding ──
-    info "── 2/6  Branding & Design ──"
+    info "── 2/5  Branding & Design ──"
     echo ""
-    dim "  Preset palettes:"
-    dim "    Purple/Orange:  #8A2BE2 / #FF8A00"
-    dim "    Blue/Coral:     #3B82F6 / #F97316"
-    dim "    Green/Amber:    #10B981 / #F59E0B"
-    dim "    Indigo/Pink:    #6366F1 / #EC4899"
-    echo ""
-    prompt_value PRIMARY_COLOR "Primary color (hex)" "$DEFAULT_PRIMARY_COLOR" hex_color
-    prompt_value ACCENT_COLOR  "Accent color (hex)"  "$DEFAULT_ACCENT_COLOR" hex_color
+    dim "  Brand colours are fixed in Core/Theme/DesignSystem.swift"
+    dim "  (deep indigo ground, periwinkle action colour)."
     echo ""
     prompt_choice SURFACE_STYLE "Surface style:" "$DEFAULT_SURFACE_STYLE" \
         "flat" "bordered" "elevated" "glass" "liquidGlass"
@@ -246,7 +238,6 @@ show_summary() {
     printf "${RESET}"
     echo ""
     printf "  %-22s ${GREEN}%s${RESET} (%s)\n" "App:" "$APP_NAME" "$BUNDLE_ID"
-    printf "  %-22s ${GREEN}%s${RESET} / ${GREEN}%s${RESET}\n" "Colors:" "$PRIMARY_COLOR" "$ACCENT_COLOR"
     printf "  %-22s ${GREEN}%s${RESET}  Density: ${GREEN}%s${RESET}\n" "Surface:" "$SURFACE_STYLE" "$SPACING_DENSITY"
     printf "  %-22s %b\n" "Onboarding:" "$([ "$FEAT_ONBOARDING" = "true" ] && echo "$on" || echo "$off")"
     printf "  %-22s %b\n" "Radar unlock (\$ once):" "$([ "$FEAT_RADAR_UNLOCK" = "true" ] && echo "$on" || echo "$off")"
@@ -349,16 +340,6 @@ SECRETS_EOF
         2>/dev/null || true)
     for f in $bid_files; do
         safe_sed "__BUNDLE_ID__" "$BUNDLE_ID" "$f"
-    done
-
-    # __PRIMARY_COLOR__ and __ACCENT_COLOR__
-    local color_files
-    color_files=$(LC_ALL=C grep -rl '__PRIMARY_COLOR__\|__ACCENT_COLOR__' "$PROJECT_ROOT" \
-        --include='*.swift' --include='*.yml' --include='*.plist' \
-        2>/dev/null || true)
-    for f in $color_files; do
-        safe_sed "__PRIMARY_COLOR__" "$PRIMARY_COLOR" "$f"
-        safe_sed "__ACCENT_COLOR__" "$ACCENT_COLOR" "$f"
     done
 
     # __PRIVACY_URL__ and __TERMS_URL__
@@ -471,7 +452,7 @@ show_completion() {
     echo -e "  ${BOLD}Files configured:${RESET}"
     echo -e "    ${DIM}Config/AppConfig.swift        — app name, features, branding${RESET}"
     echo -e "    ${DIM}Config/Secrets.swift          — API keys${RESET}"
-    echo -e "    ${DIM}Core/Theme/DesignSystem.swift — colors, surface style, density${RESET}"
+    echo -e "    ${DIM}Core/Theme/DesignSystem.swift — palette, surface style, density${RESET}"
     echo -e "    ${DIM}project.yml                   — project name, bundle ID${RESET}"
     echo ""
     echo -e "  ${DIM}To change the theme later, edit Core/Theme/DesignSystem.swift${RESET}"
@@ -508,8 +489,6 @@ print(d.get('$1', ''))" 2>/dev/null
 
     APP_NAME=$(json_val app_name)
     BUNDLE_ID=$(json_val bundle_id)
-    PRIMARY_COLOR=$(json_val primary_color)
-    ACCENT_COLOR=$(json_val accent_color)
     SURFACE_STYLE=$(json_val surface_style)
     SPACING_DENSITY=$(json_val spacing_density)
     FEAT_ONBOARDING=$(json_val feat_onboarding)
@@ -525,8 +504,6 @@ print(d.get('$1', ''))" 2>/dev/null
     # Fill defaults
     [ -z "$APP_NAME" ]         && APP_NAME="$DEFAULT_APP_NAME"
     [ -z "$BUNDLE_ID" ]        && BUNDLE_ID="$DEFAULT_BUNDLE_ID"
-    [ -z "$PRIMARY_COLOR" ]    && PRIMARY_COLOR="$DEFAULT_PRIMARY_COLOR"
-    [ -z "$ACCENT_COLOR" ]     && ACCENT_COLOR="$DEFAULT_ACCENT_COLOR"
     [ -z "$SURFACE_STYLE" ]     && SURFACE_STYLE="$DEFAULT_SURFACE_STYLE"
     [ -z "$SPACING_DENSITY" ]   && SPACING_DENSITY="$DEFAULT_SPACING_DENSITY"
     [ -z "$FEAT_ONBOARDING" ]   && FEAT_ONBOARDING="$DEFAULT_FEAT_ONBOARDING"

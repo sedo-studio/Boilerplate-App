@@ -1,9 +1,7 @@
 {
   "app_name": "Find My Headphones",
   "bundle_id": "com.yourcompany.findmyheadphones",
-  "primary_color": "#1F2937",
-  "accent_color": "#3B82F6",
-  "surface_style": "elevated",
+  "surface_style": "glass",
   "spacing_density": "1.0",
   "feat_onboarding": "true",
   "feat_radar_unlock": "true",
