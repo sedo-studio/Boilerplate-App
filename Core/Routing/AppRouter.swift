@@ -5,15 +5,9 @@
 import SwiftUI
 
 public enum AppRoute: Hashable {
-    case home
-    case settings
-    case detail(id: String)
-    case notifications
-    case paywall
-    // AI features
-    case aiChat
-    case aiImages
-    case aiVision
+    /// The paid proximity screen. Reached from the finder once the radar is
+    /// unlocked; the paywall is presented as a sheet rather than a route.
+    case radar
 }
 
 @MainActor

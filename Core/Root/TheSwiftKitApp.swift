@@ -3,107 +3,39 @@
 //
 
 import SwiftUI
-import UserNotifications
 
 @main
 struct TheSwiftKitApp: App {
+    private let container: DIContainer
     @StateObject private var router = AppRouter()
-    private let container = DIContainer.makeDefault()
-    #if DEBUG
-    @State private var showTester: Bool = true
-    #endif
+    @StateObject private var entitlements: Entitlements
 
-    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @AppStorage("appThemeStyle") private var themeStyleRaw: String = DS.surfaceStyle.rawValue
     @AppStorage("appearanceDark") private var appearanceDark: Bool = false
     @AppStorage("appearanceLocked") private var appearanceLocked: Bool = false
-    // PRO: observe the in-app language selection (Modules/Localization).
-    @StateObject private var localization = LocalizationManager.shared
 
     init() {
-        // Initialize analytics as early as possible
+        let container = DIContainer.makeDefault()
+        self.container = container
+        _entitlements = StateObject(wrappedValue: Entitlements(purchases: container.purchasesService,
+                                                              flags: container.config.featureFlags))
+
         container.analytics.configure()
         container.analytics.track("App.Launch")
-
-        // Start cache auto-invalidation listener (clears cache on sign-out).
-        // Safe to call multiple times; only the first call registers observers.
-        if container.config.featureFlags.enableCaching {
-            CacheInvalidationObserver.shared.startListening()
-        }
-
-        // PRO: install the runtime-language hook (Modules/Localization).
-        if container.config.featureFlags.localization {
-            LocalizationManager.installIfNeeded()
-        }
+        container.purchasesService.configure()
+        // Installs the notification delegate before launch completes, which is
+        // what lets a left-behind alert show while the app is open.
+        ReminderScheduler.shared.installDelegate()
     }
 
     var body: some Scene {
         WindowGroup {
-            #if DEBUG
-            Group {
-                if showTester {
-                    TestDriveView(continueAction: { route in
-                        withAnimation(.easeInOut(duration: 0.3)) {
-                            showTester = false
-                        }
-                        if let route {
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                                withAnimation(.easeInOut(duration: 0.3)) {
-                                    router.push(route)
-                                }
-                            }
-                        }
-                    })
-                } else {
-                    RootView()
-                }
-            }
-            .inject(container)
-            .environmentObject(router)
-            .dsTheme(DSTheme(surfaceStyle: SurfaceStyle(rawValue: themeStyleRaw) ?? DS.surfaceStyle))
-            .preferredColorScheme(appearanceLocked ? (appearanceDark ? .dark : .light) : nil)
-            .environment(\.locale, localization.locale)                       // PRO: localization
-            .appLockGate(enabled: container.config.featureFlags.biometricLock) // PRO: app lock
-            .task {
-                // Configure RevenueCat early and refresh entitlements on launch
-                container.purchasesService.configure()
-                await container.purchasesService.refreshSubscriptionStatus()
-            }
-            .id(localization.languageCode)                                    // PRO: rebuild on language change
-            #else
             RootView()
                 .inject(container)
                 .environmentObject(router)
+                .environmentObject(entitlements)
                 .dsTheme(DSTheme(surfaceStyle: SurfaceStyle(rawValue: themeStyleRaw) ?? DS.surfaceStyle))
                 .preferredColorScheme(appearanceLocked ? (appearanceDark ? .dark : .light) : nil)
-                .environment(\.locale, localization.locale)                       // PRO: localization
-                .appLockGate(enabled: container.config.featureFlags.biometricLock) // PRO: app lock
-                .task {
-                    // Configure RevenueCat early and refresh entitlements on launch
-                    container.purchasesService.configure()
-                    await container.purchasesService.refreshSubscriptionStatus()
-                }
-                .id(localization.languageCode)                                    // PRO: rebuild on language change
-            #endif
         }
-    }
-}
-
-final class AppDelegate: NSObject, UIApplicationDelegate {
-    func application(_ application: UIApplication,
-                     didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-        Task { @MainActor in
-            NotificationService.shared.setDeviceToken(deviceToken)
-        }
-    }
-    func application(_ application: UIApplication,
-                     didFailToRegisterForRemoteNotificationsWithError error: Error) {
-        print("APNs registration failed: \(error)")
-    }
-
-    func application(_ application: UIApplication,
-                     didReceiveRemoteNotification userInfo: [AnyHashable : Any],
-                     fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
-        NotificationService.shared.handleBackgroundRemoteNotification(userInfo: userInfo, completion: completionHandler)
     }
 }

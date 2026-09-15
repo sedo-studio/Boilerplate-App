@@ -1,214 +1,161 @@
-/* Localizable strings */
-"home.title" = "Home";
-"home.tab" = "Home";
-"home.item.access" = "Item";
+/* ─────────────────────────────────────────────────────────────
+   Find My Headphones — user-facing copy.
+
+   House rule on honesty: never imply direction or distance. Bluetooth
+   signal strength tells us "warmer or colder", not "that way, 3 metres".
+   ───────────────────────────────────────────────────────────── */
+
+/* MARK: - Generic */
+"generic.ok" = "OK";
+"generic.cancel" = "Cancel";
+"generic.done" = "Done";
+"generic.close" = "Close";
+
+/* MARK: - Onboarding */
+"onb.continue" = "Continue";
+"onb.find.title" = "Misplaced your headphones?";
+"onb.find.body" = "If they're in Bluetooth range, this app will tell you — and then help you narrow down where.";
+"onb.honest.title" = "Signal, not a compass";
+"onb.honest.body" = "Headphones don't broadcast their direction, so no app can point an arrow at them. Instead we show signal strength: walk around and watch it get warmer or colder.";
+"onb.bluetooth.title" = "Bluetooth, and nothing else";
+"onb.bluetooth.body" = "We need Bluetooth to look for your headphones. There's no account to create and no data leaves your iPhone.";
+"onb.bluetooth.cta" = "Turn on Bluetooth access";
+"onb.bluetooth.note" = "iOS will ask for permission on the next screen.";
+
+/* MARK: - Finder (free) */
+"finder.tab" = "Find";
+"finder.title" = "Find";
+"finder.idle.title" = "Ready when you are";
+"finder.idle.body" = "Start a scan and we'll check whether your headphones are within Bluetooth range.";
+"finder.scanning.title" = "Looking around…";
+"finder.scanning.body" = "Move slowly through the room while we listen for your headphones.";
+"finder.found.title" = "Found nearby";
+"finder.found.body" = "They're within Bluetooth range of this iPhone — roughly the size of a flat or a small office.";
+"finder.found.cta" = "Show me how close";
+"finder.found.gotthem" = "I've got them";
+"finder.recovered.title" = "Nice one";
+"finder.recovered.body" = "Glad you found them. We'll remember these headphones for next time.";
+"finder.notfound.title" = "Nothing in range";
+"finder.notfound.body" = "We couldn't hear your headphones from here. They're likely out of range, switched off, or shut inside their case.";
+"finder.notfound.tips.title" = "Worth trying";
+"finder.notfound.tip1" = "Walk into the next room and scan again — Bluetooth doesn't travel far through walls.";
+"finder.notfound.tip2" = "Open the case lid if they're in it. A closed case usually stops them broadcasting.";
+"finder.notfound.tip3" = "Check they still have charge. Flat headphones are invisible to every finder app, this one included.";
+"finder.scan.cta" = "Scan for my headphones";
+"finder.scan.stop" = "Stop scanning";
+"finder.scan.again" = "Scan again";
+"finder.opensettings" = "Open Settings";
+"finder.bluetooth.denied.title" = "Bluetooth access is off";
+"finder.bluetooth.denied.body" = "This app can't look for anything without Bluetooth permission. You can turn it back on in Settings.";
+"finder.bluetooth.off.title" = "Bluetooth is switched off";
+"finder.bluetooth.off.body" = "Turn Bluetooth on in Control Centre or Settings, then scan again.";
+"finder.unsupported.title" = "Not supported";
+"finder.unsupported.body" = "This device doesn't support Bluetooth Low Energy, so it can't run the finder.";
+"finder.device.unknown" = "Unnamed device";
+"finder.picker.cta" = "Not your headphones?";
+"finder.picker.title" = "Pick a device";
+"finder.picker.empty" = "Nothing seen yet. Start a scan and keep this list open.";
+"finder.picker.connected" = "Connected";
+"finder.picker.footer" = "Pick the device you want to track. We'll remember it and look for it first next time.";
+"finder.honest.note" = "We work from Bluetooth signal strength. That tells you how close you are, not which direction to walk — no third-party app can do direction for AirPods.";
+
+/* MARK: - Radar (paid) */
+"radar.title" = "Proximity";
+"radar.warmup.title" = "Listening…";
+"radar.warmup.body" = "Hold still for a moment while we take a few readings.";
+"radar.gotthem" = "I've got them";
+"radar.disclaimer" = "Based on Bluetooth signal strength. Signal bounces off walls, bodies and furniture, so treat this as warmer/colder — not a direction.";
+"radar.proximity.veryclose" = "Very close";
+"radar.proximity.veryclose.detail" = "Within arm's reach. Check under cushions, in bags and down the sides of chairs.";
+"radar.proximity.close" = "Close";
+"radar.proximity.close.detail" = "Same room, most likely. Sweep slowly and watch the ring.";
+"radar.proximity.nearby" = "Nearby";
+"radar.proximity.nearby.detail" = "In range but not close. Try moving to another part of the room.";
+"radar.proximity.far" = "Faint signal";
+"radar.proximity.far.detail" = "Barely audible to us. Walk in one direction for a few seconds and see if it improves.";
+"radar.trend.warmer" = "Getting warmer";
+"radar.trend.colder" = "Getting colder";
+"radar.trend.steady" = "Holding steady";
+
+/* MARK: - Paywalls (shared) */
+"paywall.error.title" = "Purchase";
+"paywall.restore" = "Restore purchases";
+"paywall.restore.nothing" = "We couldn't find a previous purchase on this Apple ID.";
+"paywall.period.onetime" = "one-time";
+"paywall.period.day" = "per day";
+"paywall.period.week" = "per week";
+"paywall.period.month" = "per month";
+"paywall.period.year" = "per year";
+
+/* MARK: - Paywall #1 — radar unlock (one-time) */
+"paywall.radar.title" = "See how close you are";
+"paywall.radar.subtitle" = "Turn a yes-or-no answer into a warmer/colder hunt.";
+"paywall.radar.plan.name" = "Radar unlock";
+"paywall.radar.plan.period" = "one-time";
+"paywall.radar.cta" = "Unlock forever — %@";
+"paywall.radar.footnote" = "One-time purchase. No subscription, no renewal.";
+"paywall.radar.benefit.live.title" = "Live proximity radar";
+"paywall.radar.benefit.live.body" = "The ring grows and pulses faster as the signal strengthens.";
+"paywall.radar.benefit.warmer.title" = "Warmer or colder, in real time";
+"paywall.radar.benefit.warmer.body" = "Know within a step or two whether you're heading the right way.";
+"paywall.radar.benefit.offline.title" = "Works anywhere";
+"paywall.radar.benefit.offline.body" = "Bluetooth only — no internet, no account, no tracking.";
+"paywall.radar.benefit.onetime.title" = "Buy it once";
+"paywall.radar.benefit.onetime.body" = "Yours forever, on every device signed into your Apple ID.";
+
+/* MARK: - Paywall #2 — left-behind alerts (subscription) */
+"paywall.alerts.title" = "Never walk off without them";
+"paywall.alerts.subtitle" = "Get a nudge when your headphones are left behind.";
+"paywall.alerts.plan.name" = "Left-behind alerts";
+"paywall.alerts.plan.period" = "per month";
+"paywall.alerts.cta" = "Start alerts — %@";
+"paywall.alerts.footnote" = "Auto-renewing subscription, billed monthly. Cancel any time in the App Store.";
+"paywall.alerts.benefit.alert.title" = "A nudge when it matters";
+"paywall.alerts.benefit.alert.body" = "If your headphones drop off and stay gone, we tell you.";
+"paywall.alerts.benefit.background.title" = "Runs in the background";
+"paywall.alerts.benefit.background.body" = "No need to keep the app open or remember to check.";
+"paywall.alerts.benefit.private.title" = "Stays on your iPhone";
+"paywall.alerts.benefit.private.body" = "Detection happens on-device. We never see your location.";
+"paywall.alerts.benefit.cancel.title" = "Cancel any time";
+"paywall.alerts.benefit.cancel.body" = "Two taps in the App Store, no questions asked.";
+
+/* MARK: - Left-behind notification */
+"alerts.leftbehind.notification.title" = "Left your headphones?";
+"alerts.leftbehind.notification.body %@" = "%@ dropped out of range a moment ago and haven't come back.";
+
+/* MARK: - Settings */
 "settings.tab" = "Settings";
 "settings.title" = "Settings";
+"settings.alert.title" = "Purchases";
+
+"settings.device.section" = "Your headphones";
+"settings.device.none" = "No headphones saved yet. Run a scan and we'll remember what we find.";
+"settings.device.forget" = "Forget this device";
+"settings.device.forget.confirm" = "Forget these headphones? The next scan will pick a device again.";
+
+"settings.radar.section" = "Proximity radar";
+"settings.radar.unlock" = "Unlock the radar";
+"settings.radar.unlocked" = "Radar unlocked";
+"settings.radar.footer" = "A one-time purchase that turns the finder into a warmer/colder hunt.";
+
+"settings.alerts.section" = "Left-behind alerts";
+"settings.alerts.toggle" = "Alert me when I leave them";
+"settings.alerts.subscribe" = "Set up left-behind alerts";
+"settings.alerts.manage" = "Manage subscription";
+"settings.alerts.permission" = "Notifications are off — tap to fix";
+"settings.alerts.permission.denied" = "Without notification permission we have no way to reach you. You can grant it in iOS Settings.";
+"settings.alerts.footer.on" = "We watch the Bluetooth link to your headphones and notify you if it drops while you're moving away. Putting them in the case can look the same to us, so we wait a minute before saying anything.";
+"settings.alerts.footer.off" = "A monthly subscription that watches for the moment your headphones are left behind.";
+
+"settings.purchases.section" = "Purchases";
+"settings.restore" = "Restore purchases";
+"settings.restore.done" = "Restore finished. Anything bought on this Apple ID is now active.";
+
 "settings.appearance" = "Appearance";
-"settings.darkmode" = "Dark Mode";
-"settings.theme" = "Theme";
-"settings.theme.standard" = "Standard";
-"settings.theme.glass" = "Glass";
-"settings.legal" = "Legal";
-"settings.privacy" = "Privacy Policy";
-"settings.terms" = "Terms of Service";
-"detail.title" = "Detail";
+"settings.darkmode" = "Dark mode";
 
-/* Onboarding */
-"onb.welcome.title" = "Welcome to __APP_NAME__";
-"onb.welcome.subtitle" = "Generate SwiftUI apps in minutes.";
-"onb.build.title" = "Build Faster";
-"onb.build.subtitle" = "Skip boilerplate with ready modules.";
-"onb.launch.title" = "Launch Confidently";
-"onb.launch.subtitle" = "Compliance-ready defaults baked in.";
-"onb.next" = "Next";
-"onb.getstarted" = "Get Started";
-"onb.next.access" = "Advance onboarding";
-"onb.highlights.title" = "Why you’ll love it";
-"onb.highlights.subtitle" = "Three quick highlights to get going";
-"onb.minimal.title" = "Ready when you are";
-"onb.minimal.subtitle" = "Let’s create your starter app.";
-/* Showcase */
-"home.showcase" = "Showcase";
-"showcase.title" = "Showcase";
-"showcase.subtitle" = "Preview core navigation, theme, and onboarding.";
-"showcase.overview" = "Overview";
-"showcase.actions" = "Actions";
-"showcase.theme" = "Theme";
-"showcase.pushdetail" = "Push Detail";
-"showcase.showonboarding" = "Show Onboarding";
-"showcase.opensettings" = "Open Settings";
-"showcase.colors" = "Primary & Accent";
-
-/* Test Drive */
-"tester.title" = "Test Drive";
-"tester.overview" = "Overview";
-"tester.subtitle" = "Launch the app, preview onboarding and auth, and jump to screens.";
-"tester.section.flow" = "App Flow";
-"tester.section.shortcuts" = "Shortcuts";
-"tester.launchapp" = "Continue to App";
-"tester.resetonboarding" = "Reset Onboarding Seen";
-"tester.showonboarding" = "Show Onboarding (next)";
-"tester.showauth" = "Show Auth";
-"tester.openhome" = "Open Home";
-"tester.opensettings" = "Open Settings";
-"tester.opennotifs" = "Open Notifications Tester";
-
-/* Notifications */
-"notif.debug.title" = "Notifications";
-"notif.status" = "Status";
-"notif.status.authorized" = "Authorized";
-"notif.status.denied" = "Denied";
-"notif.status.provisional" = "Provisional";
-"notif.status.ephemeral" = "Ephemeral";
-"notif.status.undetermined" = "Not Determined";
-"notif.scheduled.count" = "Pending:";
-"notif.permissions" = "Permissions";
-"notif.request" = "Request Authorization";
-"notif.open.settings" = "Open System Settings";
-"notif.local" = "Local Notifications";
-"notif.schedule.5s" = "Schedule in 5 seconds";
-"notif.schedule.actions" = "Schedule with Actions (5s)";
-"notif.clear.pending" = "Clear Pending";
-"notif.remote" = "Remote (APNs)";
-"notif.register.apns" = "Register for Remote Notifications";
-"notif.sample.title" = "Hello";
-"notif.sample.body" = "This is a sample notification.";
-"notif.sample.actions.title" = "Quick Actions";
-"notif.sample.actions.body" = "Try Like or Reply.";
-
-/* Auth */
-"auth.nav" = "Sign In";
-"auth.title" = "Welcome back";
-"auth.subtitle" = "Sign in to continue";
-"auth.email" = "Email";
-"auth.password" = "Password";
-"auth.password.confirm" = "Confirm Password";
-"auth.signin" = "Sign In";
-"auth.signout" = "Sign Out";
-"auth.or" = "or";
-"auth.apple" = "Sign in with Apple";
-"auth.apple.note" = "Apple sign-in uses mock data in local mode.";
-"auth.apple.error.cancelled" = "Sign in was cancelled.";
-"auth.apple.error.token" = "Could not retrieve Apple identity token. Please try again.";
-"auth.apple.error.authorization" = "Apple authorization failed: %@";
-"auth.apple.error.backend" = "Could not complete sign in: %@";
-"auth.error" = "Could not sign in. Check your details and try again.";
-"auth.signin.access" = "Sign in";
-"auth.apple.access" = "Sign in with Apple";
-"auth.error.access" = "Sign in error";
-"auth.createaccount" = "Create Account";
-"auth.signup" = "Sign Up";
-"auth.signup.access" = "Sign up";
-"auth.create.nav" = "Create Account";
-"auth.create.title" = "Create your account";
-"auth.create.subtitle" = "Enter your details to get started";
-"auth.error.signup" = "Could not sign up. Check your details and try again.";
-"auth.confirm.email" = "Check your email to confirm your account.";
-
-/* Onboarding polish */
-"onb.skip" = "Skip";
-"onb.skip.access" = "Skip onboarding";
-
-/* Account */
-"account.section" = "Account";
-"account.delete" = "Delete Account…";
-"account.delete.confirm" = "Delete Account";
-"account.delete.action" = "Delete";
-"account.delete.message" = "This removes your account data. In local mode, this signs you out.";
-"generic.cancel" = "Cancel";
-
-/* Home Screen */
-"home.welcome" = "Welcome";
-"home.welcome.named %@" = "Welcome, %@";
-"home.section.ai" = "AI Features";
-"home.ai.chat" = "Text Generation";
-"home.ai.images" = "Image Generation";
-"home.ai.vision" = "Vision Analysis";
-"home.getstarted.title" = "Getting Started";
-"home.getstarted.body" = "This is your app's home screen. Add feature sections by enabling flags in FeatureFlags.swift, or add your own content directly in HomeView.swift.";
-"tester.runfullflow" = "Run Full Flow";
-
-/* AI Module */
-"ai.chat.title" = "Text Generation";
-"ai.chat.placeholder" = "Type a message";
-"ai.images.title" = "Image Generation";
-"ai.images.placeholder" = "Describe an image";
-"ai.images.generate" = "Generate";
-"ai.images.empty" = "No images yet";
-"ai.vision.title" = "Vision";
-"ai.vision.choose" = "Choose Photo";
-"ai.vision.camera" = "Take Photo";
-"ai.vision.empty" = "No image selected";
-"ai.vision.analyze" = "Analyze Image";
-
-/* Paywall */
-"paywall.title" = "Pick your plan";
-"paywall.benefit.1" = "Unlimited access to all features";
-"paywall.benefit.2" = "Priority support";
-"paywall.benefit.3" = "Ad-free experience";
-"paywall.benefit.4" = "Cloud sync across devices";
-"paywall.benefit.5" = "Early access to new features";
-"paywall.allplans" = "Show all plans";
-"paywall.fewerplans" = "Show fewer plans";
-"paywall.continue" = "Continue";
-"paywall.restore" = "Restore Purchases";
-
-/* Generic */
-"generic.ok" = "OK";
-
-/* PRO: Charts (Modules/Charts) */
-"charts.title" = "Charts";
-"charts.stat.total" = "Total";
-"charts.stat.peak" = "Peak";
-"charts.stat.avg" = "Average";
-"charts.weekly.title" = "Weekly Activity";
-"charts.weekly.subtitle" = "Daily active users over the last 7 days.";
-"charts.breakdown.title" = "By Plan";
-
-/* PRO: Feedback (Modules/Feedback) */
-"feedback.title" = "Feedback";
-"feedback.category" = "Category";
-"feedback.message" = "Message";
-"feedback.email" = "Email (optional)";
-"feedback.email.placeholder" = "you@example.com";
-"feedback.submit" = "Send Feedback";
-"feedback.email.instead" = "Email us instead";
-"feedback.thanks.title" = "Thank you!";
-"feedback.thanks.message" = "Your feedback has been sent.";
-"feedback.error.title" = "Couldn't Send";
-"feedback.cat.bug" = "Bug";
-"feedback.cat.idea" = "Idea";
-"feedback.cat.question" = "Question";
-"feedback.cat.praise" = "Praise";
-"feedback.cat.other" = "Other";
-
-/* PRO: App Lock (Modules/AppLock) */
-"applock.title" = "Locked";
-"applock.subtitle" = "Authenticate to continue.";
-"applock.unlock" = "Unlock";
-"applock.reason" = "Unlock the app";
-
-/* PRO: Localization (Modules/Localization) */
-"language.title" = "Language";
-"language.choose" = "App Language";
-"language.preview" = "Live Preview";
-"language.footer" = "Changes apply instantly across the app.";
-
-/* PRO: Settings entries */
-"settings.security" = "Security";
-"settings.applock" = "Require Face ID / Touch ID";
-"settings.language" = "Language";
-"settings.feedback" = "Send Feedback";
-"settings.rate" = "Rate the App";
-
-/* PRO: Test Drive entries */
-"tester.section.pro" = "Pro Features";
-"tester.charts" = "Charts";
-"tester.feedback" = "In-App Feedback";
-"tester.review.native" = "Request App Review";
-"tester.review.event" = "Log Significant Event";
-"tester.applock" = "Lock the App Now";
-"tester.language" = "Language Picker";
-"tester.applock.test" = "Test Face ID / Touch ID";
-"applock.test.title" = "Biometric Test";
+"settings.about.section" = "About";
+"settings.rate" = "Rate the app";
+"settings.privacy" = "Privacy policy";
+"settings.terms" = "Terms of use";
+"settings.about.footer" = "This app finds headphones by Bluetooth signal strength. It cannot show direction, and it cannot find headphones that are switched off, flat, or out of range.";

@@ -6,278 +6,191 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(\.container) private var container
-    @EnvironmentObject private var router: AppRouter
     @Environment(\.colorScheme) private var scheme
+    @EnvironmentObject private var entitlements: Entitlements
+    @StateObject private var monitor = LeftBehindMonitor.shared
+    @StateObject private var finder = BluetoothFinder.shared
+    @StateObject private var scheduler = ReminderScheduler.shared
+
     @AppStorage("appearanceDark") private var appearanceDark: Bool = false
     @AppStorage("appearanceLocked") private var appearanceLocked: Bool = false
-    // PRO: biometric app lock opt-in (Modules/AppLock).
-    @AppStorage("appLockEnabled") private var appLockEnabled: Bool = false
-    @State private var currentUser: User?
-    @State private var profile: Profile?
-    @State private var subscription: SubscriptionStatus?
-    @State private var purchasedNameOverride: String? = nil
-    @State private var purchasedExpiresOverride: Date? = nil
-    @State private var hasActiveEntitlement: Bool = false
-    @State private var willRenew: Bool? = nil
-    @State private var showDeleteAlert: Bool = false
-    @State private var purchaseErrorMessage: String? = nil
-    // Theme style picker removed from settings UI per request
+
+    @State private var showRadarPaywall = false
+    @State private var showAlertsPaywall = false
+    @State private var showForgetConfirmation = false
+    @State private var message: String?
+
+    private var flags: FeatureFlags { container.config.featureFlags }
 
     var body: some View {
         NavigationStack {
             List {
-                if let profile {
-                    Section {
-                        HStack(spacing: DS.Spacing.md) {
-                            if let url = profile.avatarURL {
-                                AsyncImage(url: url) { phase in
-                                    switch phase {
-                                    case .success(let image): image.resizable().scaledToFill()
-                                    case .failure(_): Image(systemName: "person.crop.circle.fill").resizable().scaledToFit().foregroundColor(.secondary)
-                                    case .empty: ProgressView()
-                                    @unknown default: EmptyView()
-                                    }
-                                }
-                                .frame(width: 56, height: 56)
-                                .clipShape(Circle())
-                            } else {
-                                Image(systemName: "person.crop.circle.fill").resizable().scaledToFit().foregroundColor(.secondary)
-                                    .frame(width: 56, height: 56)
-                            }
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(profile.name.isEmpty ? "" : profile.name).appFont(.headline)
-                                if let currentUser { Text(currentUser.email).foregroundColor(.secondary) }
-                            }
-                        }
-                        .padding(.vertical, DS.Spacing.sm)
-                    }
-                }
-                if container.config.featureFlags.paywall, let currentSub = subscription {
-                    Section("Subscription") {
-                        HStack {
-                            Label(subscriptionDisplayText, systemImage: "crown.fill")
-                                .foregroundColor(.secondary)
-                            Spacer()
-                            if let exp = effectiveExpiryDate {
-                                Text(exp, style: .date).foregroundColor(.secondary)
-                            }
-                        }
-                        if currentSub.plan == .free && !hasActiveEntitlement {
-                            Button {
-                                router.push(.paywall)
-                            } label: {
-                                Label("Upgrade", systemImage: "sparkles")
-                            }
-                        }
-                        if hasActiveEntitlement, willRenew == false {
-                            Text("Subscription cancelled")
-                                .appFont(.footnoteSemibold)
-                                .foregroundColor(.red)
-                            if let exp = effectiveExpiryDate {
-                                Text("\(currentSub.plan.rawValue.capitalized) plan ends on: \(exp, style: .date)")
-                                    .appFont(.footnote)
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        Button {
-                            Task {
-                                do {
-                                    try await container.purchasesService.restorePurchases()
-                                    await container.purchasesService.refreshSubscriptionStatus()
-                                } catch let e as PurchaseFriendlyError {
-                                    purchaseErrorMessage = e.localizedDescription
-                                } catch {
-                                    purchaseErrorMessage = error.localizedDescription
-                                }
-                            }
-                        } label: {
-                            Label("Restore Purchases", systemImage: "arrow.clockwise")
-                        }
-                        Button {
-                            Task {
-                                await container.purchasesService.showManageSubscriptions()
-                                await container.purchasesService.refreshSubscriptionStatus()
-                            }
-                        } label: {
-                            Label("Manage Subscription", systemImage: "link")
-                        }
-                        Link(destination: URL(string: "https://apps.apple.com/account/subscriptions")!) {
-                            Label("Manage in App Store", systemImage: "safari")
-                        }
-                    }
-                }
-                Section("settings.appearance") {
-                    Toggle(isOn: Binding(
-                        get: { appearanceLocked ? appearanceDark : (scheme == .dark) },
-                        set: { newValue in
-                            appearanceDark = newValue
-                            appearanceLocked = true
-                        }
-                    )) {
-                        Label("settings.darkmode", systemImage: "moon.fill")
-                    }
-                }
-
-                // ── PRO features (flag-gated; delete a block + its module folder to remove) ──
-                if container.config.featureFlags.biometricLock {
-                    Section("settings.security") {
-                        Toggle(isOn: $appLockEnabled) {
-                            Label("settings.applock", systemImage: "faceid")
-                        }
-                    }
-                }
-                if container.config.featureFlags.localization
-                    || container.config.featureFlags.inAppFeedback
-                    || container.config.featureFlags.reviewPrompt {
-                    Section("tester.section.pro") {
-                        if container.config.featureFlags.localization {
-                            NavigationLink { LanguagePickerView() } label: {
-                                Label("settings.language", systemImage: "globe")
-                            }
-                        }
-                        if container.config.featureFlags.inAppFeedback {
-                            NavigationLink { FeedbackView() } label: {
-                                Label("settings.feedback", systemImage: "bubble.left.and.bubble.right")
-                            }
-                        }
-                        if container.config.featureFlags.reviewPrompt {
-                            Button { ReviewManager.shared.requestNativeReviewNow() } label: {
-                                Label("settings.rate", systemImage: "star")
-                            }
-                        }
-                    }
-                }
-
-                Section("settings.legal") {
-                    Link(destination: container.config.legal.privacyPolicyURL) {
-                        Label("settings.privacy", systemImage: "hand.raised")
-                    }
-                    Link(destination: container.config.legal.termsURL) {
-                        Label("settings.terms", systemImage: "doc.text")
-                    }
-                }
-
-                if container.config.featureFlags.auth {
-                    Section("account.section") {
-                        if let currentUser {
-                            Label(currentUser.email, systemImage: "person.crop.circle")
-                                .foregroundColor(.secondary)
-                        }
-                        Button(role: .none) {
-                            Task {
-                                await container.authRepository.signOut()
-                                await container.purchasesService.logOut()
-                                // Immediately reset local subscription state on logout
-                                await MainActor.run {
-                                    currentUser = nil
-                                    subscription = .init(plan: .free, expiresAt: nil)
-                                    hasActiveEntitlement = false
-                                    purchasedNameOverride = nil
-                                    purchasedExpiresOverride = nil
-                                }
-                                NotificationCenter.default.post(name: .authStatusDidChange, object: nil)
-                            }
-                        } label: {
-                            Label("auth.signout", systemImage: "rectangle.portrait.and.arrow.right")
-                        }
-                        Button(role: .destructive) { showDeleteAlert = true } label: {
-                            Label("account.delete", systemImage: "trash")
-                        }
-                    }
-                }
+                headphonesSection
+                if flags.radarUnlock { radarSection }
+                if flags.leftBehindAlerts { alertsSection }
+                purchasesSection
+                appearanceSection
+                aboutSection
             }
             .navigationTitle(Text("settings.title"))
-            // Global preferredColorScheme is applied at app root
-            .task {
-                if container.config.featureFlags.auth {
-                    currentUser = await container.authRepository.currentUser()
-                    if let user = currentUser {
-                        do { profile = try await container.profileRepository.fetchProfile(for: user.id) } catch { profile = nil }
-                        // Start from Free, then RevenueCat refresh will update if needed
-                        subscription = .init(plan: .free, expiresAt: nil)
-                        await container.purchasesService.refreshSubscriptionStatus()
-                    }
-                }
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .subscriptionDidChange)) { note in
-                if let name = note.userInfo?[SubscriptionEventKey.productName] as? String, !name.isEmpty {
-                    purchasedNameOverride = name
-                }
-                if let exp = note.userInfo?[SubscriptionEventKey.expiresAt] as? Date {
-                    purchasedExpiresOverride = exp
-                }
-                if let active = note.userInfo?["hasActiveEntitlement"] as? Bool {
-                    hasActiveEntitlement = active
-                    if active == false {
-                        purchasedNameOverride = nil
-                        purchasedExpiresOverride = nil
-                        subscription = .init(plan: .free, expiresAt: nil)
-                    } else {
-                        // Update local subscription snapshot for instant UI
-                        let productId = (note.userInfo?["productId"] as? String)?.lowercased()
-                        let mappedPlan: SubscriptionPlan = {
-                            if let pid = productId, pid.contains("premium") { return .premium }
-                            return .pro
-                        }()
-                        let exp = note.userInfo?[SubscriptionEventKey.expiresAt] as? Date
-                        subscription = .init(plan: mappedPlan, expiresAt: exp)
-                    }
-                }
-                if let renew = note.userInfo?["willRenew"] as? Bool { willRenew = renew }
-            }
-            .onReceive(NotificationCenter.default.publisher(for: .authStatusDidChange)) { _ in
-                Task {
-                    let user = await container.authRepository.currentUser()
-                    if let u = user {
-                        // On login: link RC to supabase user, then refresh (no restore to avoid App Store prompt)
-                        await container.purchasesService.logIn(u.id)
-                        await container.purchasesService.refreshSubscriptionStatus()
-                    } else {
-                        // On logout ensure Free
-                        await MainActor.run {
-                            subscription = .init(plan: .free, expiresAt: nil)
-                            hasActiveEntitlement = false
-                            purchasedNameOverride = nil
-                            purchasedExpiresOverride = nil
-                        }
-                    }
-                }
-            }
-            .alert("account.delete.confirm", isPresented: $showDeleteAlert) {
-                Button("generic.cancel", role: .cancel) {}
-                Button("account.delete.action", role: .destructive) {
-                    Task {
-                        if let u = await container.authRepository.currentUser() {
-                            await AccountDeletionService.requestDeletionIfConfigured(userId: u.id, email: u.email)
-                        }
-                        await container.authRepository.signOut()
-                        currentUser = nil
-                        NotificationCenter.default.post(name: .authStatusDidChange, object: nil)
-                    }
-                }
+            .sheet(isPresented: $showRadarPaywall) { RadarUnlockPaywallView() }
+            .sheet(isPresented: $showAlertsPaywall) { LeftBehindPaywallView() }
+            .task { await scheduler.refresh() }
+            .alert(Text("settings.alert.title"), isPresented: .constant(message != nil)) {
+                Button("generic.ok") { message = nil }
             } message: {
-                Text("account.delete.message")
+                Text(message ?? "")
+            }
+            .confirmationDialog(Text("settings.device.forget.confirm"),
+                                isPresented: $showForgetConfirmation,
+                                titleVisibility: .visible) {
+                Button("settings.device.forget", role: .destructive) { finder.forgetDevice() }
+                Button("generic.cancel", role: .cancel) {}
             }
         }
-        // No local color scheme override here; persistence handled via AppStorage
-        .alert("Subscription", isPresented: .constant(purchaseErrorMessage != nil)) {
-            Button("OK") { purchaseErrorMessage = nil }
-        } message: {
-            Text(purchaseErrorMessage ?? "")
+    }
+
+    // MARK: - Sections
+
+    private var headphonesSection: some View {
+        Section("settings.device.section") {
+            if let name = finder.savedDeviceName {
+                HStack {
+                    Label(name, systemImage: "airpodspro")
+                    Spacer()
+                }
+                Button(role: .destructive) { showForgetConfirmation = true } label: {
+                    Label("settings.device.forget", systemImage: "trash")
+                }
+            } else {
+                Text("settings.device.none")
+                    .appFont(.footnote)
+                    .foregroundStyle(DS.Colors.textSecondary)
+            }
         }
-        .animation(.easeInOut(duration: 0.25), value: subscription)
-        .animation(.easeInOut(duration: 0.25), value: hasActiveEntitlement)
-        .animation(.easeInOut(duration: 0.25), value: willRenew)
+    }
+
+    private var radarSection: some View {
+        Section {
+            if entitlements.isRadarUnlocked {
+                Label("settings.radar.unlocked", systemImage: "checkmark.seal.fill")
+                    .foregroundStyle(DS.success)
+            } else {
+                Button { showRadarPaywall = true } label: {
+                    Label("settings.radar.unlock", systemImage: "dot.radiowaves.forward")
+                }
+            }
+        } header: {
+            Text("settings.radar.section")
+        } footer: {
+            Text("settings.radar.footer")
+        }
+    }
+
+    private var alertsSection: some View {
+        Section {
+            if entitlements.hasLeftBehindAlerts {
+                Toggle(isOn: alertsToggleBinding) {
+                    Label("settings.alerts.toggle", systemImage: "bell.badge")
+                }
+                if monitor.isEnabled && !scheduler.isAuthorized {
+                    Button { scheduler.openSystemSettings() } label: {
+                        Label("settings.alerts.permission", systemImage: "exclamationmark.triangle")
+                            .foregroundStyle(DS.warning)
+                    }
+                }
+                Button {
+                    Task { await entitlements.showManageSubscriptions() }
+                } label: {
+                    Label("settings.alerts.manage", systemImage: "creditcard")
+                }
+            } else {
+                Button { showAlertsPaywall = true } label: {
+                    Label("settings.alerts.subscribe", systemImage: "bell.badge")
+                }
+            }
+        } header: {
+            Text("settings.alerts.section")
+        } footer: {
+            Text(entitlements.hasLeftBehindAlerts ? "settings.alerts.footer.on" : "settings.alerts.footer.off")
+        }
+    }
+
+    private var purchasesSection: some View {
+        Section("settings.purchases.section") {
+            Button {
+                Task {
+                    do {
+                        try await entitlements.restore()
+                        message = String(localized: "settings.restore.done")
+                    } catch {
+                        message = error.localizedDescription
+                    }
+                }
+            } label: {
+                Label("settings.restore", systemImage: "arrow.clockwise")
+            }
+        }
+    }
+
+    private var appearanceSection: some View {
+        Section("settings.appearance") {
+            Toggle(isOn: Binding(
+                get: { appearanceLocked ? appearanceDark : (scheme == .dark) },
+                set: { newValue in
+                    appearanceDark = newValue
+                    appearanceLocked = true
+                }
+            )) {
+                Label("settings.darkmode", systemImage: "moon.fill")
+            }
+        }
+    }
+
+    private var aboutSection: some View {
+        Section {
+            if flags.reviewPrompt {
+                Button { ReviewManager.shared.requestNativeReviewNow() } label: {
+                    Label("settings.rate", systemImage: "star")
+                }
+            }
+            Link(destination: container.config.legal.privacyPolicyURL) {
+                Label("settings.privacy", systemImage: "hand.raised")
+            }
+            Link(destination: container.config.legal.termsURL) {
+                Label("settings.terms", systemImage: "doc.text")
+            }
+        } header: {
+            Text("settings.about.section")
+        } footer: {
+            Text("settings.about.footer")
+        }
+    }
+
+    // MARK: - Intent
+
+    private var alertsToggleBinding: Binding<Bool> {
+        Binding(
+            get: { monitor.isEnabled },
+            set: { newValue in
+                guard newValue else {
+                    monitor.disable()
+                    return
+                }
+                Task {
+                    let granted = await monitor.enable()
+                    if !granted {
+                        message = String(localized: "settings.alerts.permission.denied")
+                    }
+                }
+            }
+        )
     }
 }
 
-private extension SettingsView {
-    var subscriptionDisplayText: String {
-        if let override = purchasedNameOverride, !override.isEmpty {
-            return override
-        }
-        if let s = subscription { return s.plan.rawValue.capitalized }
-        return "Free"
+struct SettingsView_Previews: PreviewProvider {
+    static var previews: some View {
+        SettingsView()
+            .environmentObject(Entitlements(purchases: LocalPurchasesService(), flags: .default))
     }
-    var effectiveExpiryDate: Date? { purchasedExpiresOverride ?? subscription?.expiresAt }
 }

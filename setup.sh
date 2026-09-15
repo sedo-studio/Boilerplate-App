@@ -53,46 +53,21 @@ DEFAULT_PRIMARY_COLOR="#8A2BE2"
 DEFAULT_ACCENT_COLOR="#FF8A00"
 DEFAULT_SURFACE_STYLE="elevated"
 DEFAULT_SPACING_DENSITY="1.0"
-DEFAULT_BACKEND="supabase"
-DEFAULT_ONBOARDING_STYLE="carousel"
 DEFAULT_FEAT_ONBOARDING="true"
-DEFAULT_FEAT_AUTH="true"
-DEFAULT_FEAT_PAYWALL="true"
-DEFAULT_FEAT_NOTIFICATIONS="false"
-DEFAULT_FEAT_AI="false"
-DEFAULT_FEAT_APPLE_SIGNIN="false"
-# PRO features (default on for Swift Kit Pro)
-DEFAULT_FEAT_CHARTS="true"
+DEFAULT_FEAT_RADAR_UNLOCK="true"
+DEFAULT_FEAT_LEFT_BEHIND="true"
 DEFAULT_FEAT_REVIEW="true"
-DEFAULT_FEAT_FEEDBACK="true"
-DEFAULT_FEAT_APPLOCK="true"
-DEFAULT_FEAT_LOCALIZATION="true"
-DEFAULT_FEAT_PAYWALLS="true"
-DEFAULT_FEAT_WIDGETS="true"
-DEFAULT_FEAT_QUIZ="true"
-DEFAULT_FEAT_GAMIFICATION="true"
-DEFAULT_FEAT_AIPRO="true"
-DEFAULT_FEAT_CAMERA="true"
-DEFAULT_FEAT_REMINDERS="true"
-DEFAULT_FEAT_SWIFTDATA="true"
-DEFAULT_SUPABASE_URL="https://YOUR-PROJECT.supabase.co"
-DEFAULT_SUPABASE_KEY=""
 DEFAULT_REVENUECAT_KEY=""
 DEFAULT_TELEMETRY_ID=""
-DEFAULT_AI_URL="http://127.0.0.1:5001"
 DEFAULT_TESTFLIGHT_ID=""
 DEFAULT_PRIVACY_URL="https://example.com/privacy"
 DEFAULT_TERMS_URL="https://example.com/terms"
 
 # Values to be collected
 APP_NAME="" BUNDLE_ID="" PRIMARY_COLOR="" ACCENT_COLOR=""
-SURFACE_STYLE="" SPACING_DENSITY="" BACKEND="" ONBOARDING_STYLE=""
-FEAT_ONBOARDING="" FEAT_AUTH="" FEAT_PAYWALL=""
-FEAT_NOTIFICATIONS="" FEAT_AI="" FEAT_APPLE_SIGNIN=""
-FEAT_CHARTS="" FEAT_REVIEW="" FEAT_FEEDBACK="" FEAT_APPLOCK="" FEAT_LOCALIZATION="" FEAT_PAYWALLS=""
-FEAT_WIDGETS="" FEAT_QUIZ="" FEAT_GAMIFICATION="" FEAT_AIPRO="" FEAT_CAMERA="" FEAT_REMINDERS="" FEAT_SWIFTDATA=""
-SUPABASE_URL="" SUPABASE_KEY="" REVENUECAT_KEY=""
-TELEMETRY_ID="" AI_URL="" TESTFLIGHT_ID=""
+SURFACE_STYLE="" SPACING_DENSITY=""
+FEAT_ONBOARDING="" FEAT_RADAR_UNLOCK="" FEAT_LEFT_BEHIND="" FEAT_REVIEW=""
+REVENUECAT_KEY="" TELEMETRY_ID="" TESTFLIGHT_ID=""
 PRIVACY_URL="" TERMS_URL=""
 
 # ---------------------------------------------------------------------------
@@ -229,75 +204,30 @@ collect_values() {
         "0.85" "1.0" "1.15"
 
     # ── 3. Features ──
-    info "── 3/6  Features ──"
+    info "── 3/5  Features ──"
     echo ""
-    dim "  Disabled features are fully removed from the UI."
+    dim "  The finder itself (scan → \"found nearby\") is always on — it is the app."
     echo ""
-    prompt_yn FEAT_ONBOARDING   "Onboarding flow?"                "$DEFAULT_FEAT_ONBOARDING"
-    if [ "$FEAT_ONBOARDING" = "true" ]; then
-        echo ""
-        prompt_choice ONBOARDING_STYLE "  Onboarding style:" "$DEFAULT_ONBOARDING_STYLE" \
-            "carousel" "highlights" "minimal"
-    else
-        ONBOARDING_STYLE="$DEFAULT_ONBOARDING_STYLE"
-    fi
-    prompt_yn FEAT_AUTH          "Authentication (email/password)?" "$DEFAULT_FEAT_AUTH"
-    prompt_yn FEAT_APPLE_SIGNIN  "Sign in with Apple?"             "$DEFAULT_FEAT_APPLE_SIGNIN"
-    prompt_yn FEAT_PAYWALL       "Paywall / subscriptions?"        "$DEFAULT_FEAT_PAYWALL"
-    prompt_yn FEAT_NOTIFICATIONS "Push notifications?"             "$DEFAULT_FEAT_NOTIFICATIONS"
-    prompt_yn FEAT_AI            "AI features (chat, image gen, vision)?" "$DEFAULT_FEAT_AI"
+    prompt_yn FEAT_ONBOARDING    "First-run onboarding?"                     "$DEFAULT_FEAT_ONBOARDING"
+    prompt_yn FEAT_RADAR_UNLOCK  "Sell the radar as a one-time unlock?"      "$DEFAULT_FEAT_RADAR_UNLOCK"
+    prompt_yn FEAT_LEFT_BEHIND   "Left-behind alerts (subscription)?"        "$DEFAULT_FEAT_LEFT_BEHIND"
+    prompt_yn FEAT_REVIEW        "App Store review prompt after a find?"     "$DEFAULT_FEAT_REVIEW"
     echo ""
-    dim "  Pro features:"
-    prompt_yn FEAT_CHARTS        "Swift Charts demo?"              "$DEFAULT_FEAT_CHARTS"
-    prompt_yn FEAT_REVIEW        "App Store review prompt?"        "$DEFAULT_FEAT_REVIEW"
-    prompt_yn FEAT_FEEDBACK      "In-app feedback?"                "$DEFAULT_FEAT_FEEDBACK"
-    prompt_yn FEAT_APPLOCK       "Biometric app lock (Face ID)?"   "$DEFAULT_FEAT_APPLOCK"
-    prompt_yn FEAT_LOCALIZATION  "In-app language switcher?"       "$DEFAULT_FEAT_LOCALIZATION"
-    prompt_yn FEAT_PAYWALLS      "Paywall templates (10 designs)?" "$DEFAULT_FEAT_PAYWALLS"
-    prompt_yn FEAT_WIDGETS       "Widgets + Live Activities?"       "$DEFAULT_FEAT_WIDGETS"
-    prompt_yn FEAT_QUIZ          "Questionnaire onboarding?"        "$DEFAULT_FEAT_QUIZ"
-    prompt_yn FEAT_GAMIFICATION  "Gamification (XP/streaks/badges)?" "$DEFAULT_FEAT_GAMIFICATION"
-    prompt_yn FEAT_AIPRO         "AI PRO (streaming chat + history)?" "$DEFAULT_FEAT_AIPRO"
-    prompt_yn FEAT_CAMERA        "Camera + document scanner + OCR?" "$DEFAULT_FEAT_CAMERA"
-    prompt_yn FEAT_REMINDERS     "Local reminders / notifications?" "$DEFAULT_FEAT_REMINDERS"
-    prompt_yn FEAT_SWIFTDATA     "SwiftData offline store?"         "$DEFAULT_FEAT_SWIFTDATA"
+    dim "  Answering no to the radar unlock makes the radar free for everyone."
     echo ""
 
-    # ── 4. Backend ──
-    info "── 4/6  Backend ──"
-    echo ""
-    prompt_choice BACKEND "Backend provider:" "$DEFAULT_BACKEND" \
-        "supabase" "local"
-
-    # ── 5. API Keys ──
-    echo ""
-    info "── 5/6  API Keys (optional — leave blank to skip) ──"
+    # ── 4. API Keys ──
+    info "── 4/5  API Keys (optional — leave blank to skip) ──"
     echo ""
     dim "  Keys go in Config/Secrets.swift (gitignored)."
-    dim "  Leave blank to use noop/local fallbacks."
+    dim "  Without a RevenueCat key the app runs on a local purchase stub."
     echo ""
-    if [ "$BACKEND" = "supabase" ]; then
-        prompt_value SUPABASE_URL "Supabase project URL"  "$DEFAULT_SUPABASE_URL" url
-        prompt_value SUPABASE_KEY "Supabase anon key"     "$DEFAULT_SUPABASE_KEY"
-    else
-        SUPABASE_URL="$DEFAULT_SUPABASE_URL"
-        SUPABASE_KEY=""
-    fi
-    if [ "$FEAT_PAYWALL" = "true" ]; then
-        prompt_value REVENUECAT_KEY "RevenueCat API key" "$DEFAULT_REVENUECAT_KEY"
-    else
-        REVENUECAT_KEY=""
-    fi
-    prompt_value TELEMETRY_ID "TelemetryDeck app ID" "$DEFAULT_TELEMETRY_ID"
-    if [ "$FEAT_AI" = "true" ]; then
-        prompt_value AI_URL "AI backend URL" "$DEFAULT_AI_URL" url
-    else
-        AI_URL="$DEFAULT_AI_URL"
-    fi
+    prompt_value REVENUECAT_KEY "RevenueCat API key"   "$DEFAULT_REVENUECAT_KEY"
+    prompt_value TELEMETRY_ID   "TelemetryDeck app ID" "$DEFAULT_TELEMETRY_ID"
     echo ""
 
-    # ── 6. Legal ──
-    info "── 6/6  Legal Links ──"
+    # ── 5. Legal ──
+    info "── 5/5  Legal Links ──"
     echo ""
     prompt_value PRIVACY_URL "Privacy policy URL" "$DEFAULT_PRIVACY_URL" url
     prompt_value TERMS_URL   "Terms of service URL" "$DEFAULT_TERMS_URL" url
@@ -318,29 +248,11 @@ show_summary() {
     printf "  %-22s ${GREEN}%s${RESET} (%s)\n" "App:" "$APP_NAME" "$BUNDLE_ID"
     printf "  %-22s ${GREEN}%s${RESET} / ${GREEN}%s${RESET}\n" "Colors:" "$PRIMARY_COLOR" "$ACCENT_COLOR"
     printf "  %-22s ${GREEN}%s${RESET}  Density: ${GREEN}%s${RESET}\n" "Surface:" "$SURFACE_STYLE" "$SPACING_DENSITY"
-    printf "  %-22s ${GREEN}%s${RESET}\n" "Backend:" "$BACKEND"
-    printf "  %-22s %b\n" "Onboarding:" "$([ "$FEAT_ONBOARDING" = "true" ] && echo "${GREEN}${ONBOARDING_STYLE}${RESET}" || echo "$off")"
-    printf "  %-22s %b  Apple: %b\n" "Auth:" "$([ "$FEAT_AUTH" = "true" ] && echo "$on" || echo "$off")" "$([ "$FEAT_APPLE_SIGNIN" = "true" ] && echo "$on" || echo "$off")"
-    printf "  %-22s %b\n" "Paywall:" "$([ "$FEAT_PAYWALL" = "true" ] && echo "$on" || echo "$off")"
-    printf "  %-22s %b\n" "Notifications:" "$([ "$FEAT_NOTIFICATIONS" = "true" ] && echo "$on" || echo "$off")"
-    printf "  %-22s %b\n" "AI Features:" "$([ "$FEAT_AI" = "true" ] && echo "$on" || echo "$off")"
-    printf "  %-22s %b\n" "Charts:" "$([ "$FEAT_CHARTS" = "true" ] && echo "$on" || echo "$off")"
+    printf "  %-22s %b\n" "Onboarding:" "$([ "$FEAT_ONBOARDING" = "true" ] && echo "$on" || echo "$off")"
+    printf "  %-22s %b\n" "Radar unlock (\$ once):" "$([ "$FEAT_RADAR_UNLOCK" = "true" ] && echo "$on" || echo "$off")"
+    printf "  %-22s %b\n" "Left-behind alerts:" "$([ "$FEAT_LEFT_BEHIND" = "true" ] && echo "$on" || echo "$off")"
     printf "  %-22s %b\n" "Review Prompt:" "$([ "$FEAT_REVIEW" = "true" ] && echo "$on" || echo "$off")"
-    printf "  %-22s %b\n" "In-App Feedback:" "$([ "$FEAT_FEEDBACK" = "true" ] && echo "$on" || echo "$off")"
-    printf "  %-22s %b\n" "Biometric Lock:" "$([ "$FEAT_APPLOCK" = "true" ] && echo "$on" || echo "$off")"
-    printf "  %-22s %b\n" "Localization:" "$([ "$FEAT_LOCALIZATION" = "true" ] && echo "$on" || echo "$off")"
-    printf "  %-22s %b\n" "Paywall Templates:" "$([ "$FEAT_PAYWALLS" = "true" ] && echo "$on" || echo "$off")"
-    printf "  %-22s %b\n" "Widgets/LiveActivity:" "$([ "$FEAT_WIDGETS" = "true" ] && echo "$on" || echo "$off")"
-    printf "  %-22s %b\n" "Questionnaire:" "$([ "$FEAT_QUIZ" = "true" ] && echo "$on" || echo "$off")"
-    printf "  %-22s %b\n" "Gamification:" "$([ "$FEAT_GAMIFICATION" = "true" ] && echo "$on" || echo "$off")"
-    printf "  %-22s %b\n" "AI PRO:" "$([ "$FEAT_AIPRO" = "true" ] && echo "$on" || echo "$off")"
-    printf "  %-22s %b\n" "Camera/OCR:" "$([ "$FEAT_CAMERA" = "true" ] && echo "$on" || echo "$off")"
-    printf "  %-22s %b\n" "Reminders:" "$([ "$FEAT_REMINDERS" = "true" ] && echo "$on" || echo "$off")"
-    printf "  %-22s %b\n" "SwiftData Store:" "$([ "$FEAT_SWIFTDATA" = "true" ] && echo "$on" || echo "$off")"
     echo ""
-    if [ -n "$SUPABASE_KEY" ]; then
-        printf "  %-22s %s\n" "Supabase:" "${SUPABASE_URL}"
-    fi
     if [ -n "$REVENUECAT_KEY" ]; then
         printf "  %-22s %s\n" "RevenueCat:" "(key set)"
     fi
@@ -386,7 +298,6 @@ apply_changes() {
         "Config/AppConfig.swift"
         "Config/Secrets.sample.swift"
         "Core/Theme/DesignSystem.swift"
-        "Modules/Demo/TestDriveView.swift"
         "project.yml"
         "Resources/Base.lproj/Localizable.strings"
     )
@@ -410,29 +321,11 @@ apply_changes() {
 import Foundation
 
 public enum Secrets {
-    // Supabase
-    public static let supabaseURL: URL = URL(string: "${SUPABASE_URL}")!
-    public static let supabaseAnonKey: String = "${SUPABASE_KEY}"
-
-    // Sign in with Apple (fill in when ready)
-    public static let appleServiceId: String = ""
-    public static let appleTeamId: String = ""
-    public static let appleKeyId: String = ""
-    public static let applePrivateKeyPEM: String = ""
-
-    // Account deletion endpoint (optional)
-    public static let accountDeletionURLString: String = ""
-    public static var accountDeletionURL: URL? { URL(string: accountDeletionURLString) }
-
     // TelemetryDeck
     public static let telemetryDeckAppID: String = "${TELEMETRY_ID}"
 
     // RevenueCat
     public static let revenueCatAPIKey: String = "${REVENUECAT_KEY}"
-
-    // AI Backend
-    public static let aiBackendBaseURLString: String = "${AI_URL}"
-    public static var aiBackendBaseURL: URL { URL(string: aiBackendBaseURLString) ?? URL(string: "http://127.0.0.1:5001")! }
 }
 SECRETS_EOF
     success "  Config/Secrets.swift created."
@@ -489,16 +382,14 @@ SECRETS_EOF
 
     success "  Placeholders replaced."
 
-    # ── 3. AppConfig.swift — backend, onboarding, feature flags ──
+    # ── 3. AppConfig.swift — feature flags ──
     info "  Configuring AppConfig.swift ..."
     local cfg="$PROJECT_ROOT/Config/AppConfig.swift"
 
-    safe_sed "backend: .supabase" "backend: .$BACKEND" "$cfg"
-    safe_sed "onboardingStyle: .carousel" "onboardingStyle: .$ONBOARDING_STYLE" "$cfg"
-
-    # Build feature flags line
-    local ff="featureFlags: FeatureFlags(onboarding: $FEAT_ONBOARDING, auth: $FEAT_AUTH, paywall: $FEAT_PAYWALL, notifications: $FEAT_NOTIFICATIONS, aiFeatures: $FEAT_AI, appleSignIn: $FEAT_APPLE_SIGNIN, charts: $FEAT_CHARTS, reviewPrompt: $FEAT_REVIEW, inAppFeedback: $FEAT_FEEDBACK, biometricLock: $FEAT_APPLOCK, localization: $FEAT_LOCALIZATION, paywallTemplates: $FEAT_PAYWALLS, widgets: $FEAT_WIDGETS, questionnaireOnboarding: $FEAT_QUIZ, gamification: $FEAT_GAMIFICATION, aiPro: $FEAT_AIPRO, camera: $FEAT_CAMERA, reminders: $FEAT_REMINDERS, swiftDataStore: $FEAT_SWIFTDATA)"
-    safe_sed "featureFlags: FeatureFlags(auth: true, appleSignIn: true, charts: true, reviewPrompt: true, inAppFeedback: true, biometricLock: true, localization: true, paywallTemplates: true, widgets: true, questionnaireOnboarding: true, gamification: true, aiPro: true, camera: true, reminders: true, swiftDataStore: true)" "$ff" "$cfg"
+    # Rewrites the whole featureFlags line, so adding a flag to FeatureFlags.swift
+    # means adding it here too or the wizard will silently drop it.
+    local ff="featureFlags: FeatureFlags(onboarding: $FEAT_ONBOARDING, radarUnlock: $FEAT_RADAR_UNLOCK, leftBehindAlerts: $FEAT_LEFT_BEHIND, reviewPrompt: $FEAT_REVIEW)"
+    safe_sed "featureFlags: FeatureFlags(onboarding: true, radarUnlock: true, leftBehindAlerts: true, reviewPrompt: true)" "$ff" "$cfg"
 
     success "  AppConfig.swift configured."
 
@@ -524,9 +415,6 @@ SECRETS_EOF
             # Clean app name for target (remove spaces)
             local TARGET_NAME
             TARGET_NAME=$(echo "$APP_NAME" | tr -d ' ')
-            # Rename the widget extension target FIRST, so the broader renames
-            # below don't corrupt the "- target: TheSwiftKitWidgets" embed ref.
-            LC_ALL=C sed -i '' "s|TheSwiftKitWidgets|${TARGET_NAME}Widgets|g" "$PROJECT_ROOT/project.yml"
             LC_ALL=C sed -i '' "s|name: TheSwiftKit|name: $TARGET_NAME|g" "$PROJECT_ROOT/project.yml"
             LC_ALL=C sed -i '' "s|TheSwiftKit:|${TARGET_NAME}:|g" "$PROJECT_ROOT/project.yml"
             LC_ALL=C sed -i '' "s|TheSwiftKitTests|${TARGET_NAME}Tests|g" "$PROJECT_ROOT/project.yml"
@@ -581,18 +469,19 @@ show_completion() {
     echo -e "    3. Press ${GREEN}Cmd+R${RESET} to run"
     echo ""
     echo -e "  ${BOLD}Files configured:${RESET}"
-    echo -e "    ${DIM}Config/AppConfig.swift      — app name, backend, features, branding${RESET}"
-    echo -e "    ${DIM}Config/Secrets.swift         — API keys${RESET}"
+    echo -e "    ${DIM}Config/AppConfig.swift        — app name, features, branding${RESET}"
+    echo -e "    ${DIM}Config/Secrets.swift          — API keys${RESET}"
     echo -e "    ${DIM}Core/Theme/DesignSystem.swift — colors, surface style, density${RESET}"
-    echo -e "    ${DIM}project.yml                 — project name, bundle ID${RESET}"
+    echo -e "    ${DIM}project.yml                   — project name, bundle ID${RESET}"
     echo ""
     echo -e "  ${DIM}To change the theme later, edit Core/Theme/DesignSystem.swift${RESET}"
     echo -e "  ${DIM}To change features, edit Config/AppConfig.swift (featureFlags section)${RESET}"
     echo ""
-    if [ "$BACKEND" = "supabase" ] && [ -n "$SUPABASE_KEY" ]; then
-        warn "  Supabase setup reminder:"
-        echo "    Run the SQL migrations in Backend/Supabase/sql/"
-        echo "    Create 'profiles' table and 'avatars' storage bucket with RLS."
+    if [ -n "$REVENUECAT_KEY" ]; then
+        warn "  RevenueCat setup reminder:"
+        echo "    Create two entitlements: 'radar_unlock' (non-consumable) and"
+        echo "    'left_behind_alerts' (auto-renewing subscription), each served by"
+        echo "    an offering of the same name. See documentation/MONETIZATION.md."
         echo ""
     fi
     dim "  Backup saved to: $BACKUP_DIR"
@@ -623,33 +512,13 @@ print(d.get('$1', ''))" 2>/dev/null
     ACCENT_COLOR=$(json_val accent_color)
     SURFACE_STYLE=$(json_val surface_style)
     SPACING_DENSITY=$(json_val spacing_density)
-    BACKEND=$(json_val backend)
-    ONBOARDING_STYLE=$(json_val onboarding_style)
     FEAT_ONBOARDING=$(json_val feat_onboarding)
-    FEAT_AUTH=$(json_val feat_auth)
-    FEAT_PAYWALL=$(json_val feat_paywall)
-    FEAT_NOTIFICATIONS=$(json_val feat_notifications)
-    FEAT_AI=$(json_val feat_ai)
-    FEAT_APPLE_SIGNIN=$(json_val feat_apple_signin)
-    FEAT_CHARTS=$(json_val feat_charts)
+    FEAT_RADAR_UNLOCK=$(json_val feat_radar_unlock)
+    FEAT_LEFT_BEHIND=$(json_val feat_left_behind_alerts)
     FEAT_REVIEW=$(json_val feat_review)
-    FEAT_FEEDBACK=$(json_val feat_feedback)
-    FEAT_APPLOCK=$(json_val feat_applock)
-    FEAT_LOCALIZATION=$(json_val feat_localization)
-    FEAT_PAYWALLS=$(json_val feat_paywalls)
-    FEAT_WIDGETS=$(json_val feat_widgets)
-    FEAT_QUIZ=$(json_val feat_questionnaire)
-    FEAT_GAMIFICATION=$(json_val feat_gamification)
-    FEAT_AIPRO=$(json_val feat_aipro)
-    FEAT_CAMERA=$(json_val feat_camera)
-    FEAT_REMINDERS=$(json_val feat_reminders)
-    FEAT_SWIFTDATA=$(json_val feat_swiftdata)
-    SUPABASE_URL=$(json_val supabase_url)
-    SUPABASE_KEY=$(json_val supabase_anon_key)
     REVENUECAT_KEY=$(json_val revenuecat_api_key)
     TELEMETRY_ID=$(json_val telemetrydeck_app_id)
-    AI_URL=$(json_val ai_backend_url)
-    TESTFLIGHT_ID=$(json_val testflight_app_id)
+    TESTFLIGHT_ID=$(json_val app_store_id)
     PRIVACY_URL=$(json_val privacy_url)
     TERMS_URL=$(json_val terms_url)
 
@@ -658,34 +527,15 @@ print(d.get('$1', ''))" 2>/dev/null
     [ -z "$BUNDLE_ID" ]        && BUNDLE_ID="$DEFAULT_BUNDLE_ID"
     [ -z "$PRIMARY_COLOR" ]    && PRIMARY_COLOR="$DEFAULT_PRIMARY_COLOR"
     [ -z "$ACCENT_COLOR" ]     && ACCENT_COLOR="$DEFAULT_ACCENT_COLOR"
-    [ -z "$SURFACE_STYLE" ]    && SURFACE_STYLE="$DEFAULT_SURFACE_STYLE"
-    [ -z "$SPACING_DENSITY" ]  && SPACING_DENSITY="$DEFAULT_SPACING_DENSITY"
-    [ -z "$BACKEND" ]          && BACKEND="$DEFAULT_BACKEND"
-    [ -z "$ONBOARDING_STYLE" ] && ONBOARDING_STYLE="$DEFAULT_ONBOARDING_STYLE"
-    [ -z "$FEAT_ONBOARDING" ]  && FEAT_ONBOARDING="$DEFAULT_FEAT_ONBOARDING"
-    [ -z "$FEAT_AUTH" ]        && FEAT_AUTH="$DEFAULT_FEAT_AUTH"
-    [ -z "$FEAT_PAYWALL" ]     && FEAT_PAYWALL="$DEFAULT_FEAT_PAYWALL"
-    [ -z "$FEAT_NOTIFICATIONS" ] && FEAT_NOTIFICATIONS="$DEFAULT_FEAT_NOTIFICATIONS"
-    [ -z "$FEAT_AI" ]          && FEAT_AI="$DEFAULT_FEAT_AI"
-    [ -z "$FEAT_APPLE_SIGNIN" ] && FEAT_APPLE_SIGNIN="$DEFAULT_FEAT_APPLE_SIGNIN"
-    [ -z "$FEAT_CHARTS" ]      && FEAT_CHARTS="$DEFAULT_FEAT_CHARTS"
-    [ -z "$FEAT_REVIEW" ]      && FEAT_REVIEW="$DEFAULT_FEAT_REVIEW"
-    [ -z "$FEAT_FEEDBACK" ]    && FEAT_FEEDBACK="$DEFAULT_FEAT_FEEDBACK"
-    [ -z "$FEAT_APPLOCK" ]     && FEAT_APPLOCK="$DEFAULT_FEAT_APPLOCK"
-    [ -z "$FEAT_LOCALIZATION" ] && FEAT_LOCALIZATION="$DEFAULT_FEAT_LOCALIZATION"
-    [ -z "$FEAT_PAYWALLS" ]    && FEAT_PAYWALLS="$DEFAULT_FEAT_PAYWALLS"
-    [ -z "$FEAT_WIDGETS" ]     && FEAT_WIDGETS="$DEFAULT_FEAT_WIDGETS"
-    [ -z "$FEAT_QUIZ" ]        && FEAT_QUIZ="$DEFAULT_FEAT_QUIZ"
-    [ -z "$FEAT_GAMIFICATION" ] && FEAT_GAMIFICATION="$DEFAULT_FEAT_GAMIFICATION"
-    [ -z "$FEAT_AIPRO" ]       && FEAT_AIPRO="$DEFAULT_FEAT_AIPRO"
-    [ -z "$FEAT_CAMERA" ]      && FEAT_CAMERA="$DEFAULT_FEAT_CAMERA"
-    [ -z "$FEAT_REMINDERS" ]   && FEAT_REMINDERS="$DEFAULT_FEAT_REMINDERS"
-    [ -z "$FEAT_SWIFTDATA" ]   && FEAT_SWIFTDATA="$DEFAULT_FEAT_SWIFTDATA"
-    [ -z "$SUPABASE_URL" ]     && SUPABASE_URL="$DEFAULT_SUPABASE_URL"
-    [ -z "$REVENUECAT_KEY" ]   && REVENUECAT_KEY="$DEFAULT_REVENUECAT_KEY"
-    [ -z "$TELEMETRY_ID" ]     && TELEMETRY_ID="$DEFAULT_TELEMETRY_ID"
-    [ -z "$AI_URL" ]           && AI_URL="$DEFAULT_AI_URL"
-    [ -z "$PRIVACY_URL" ]      && PRIVACY_URL="$DEFAULT_PRIVACY_URL"
+    [ -z "$SURFACE_STYLE" ]     && SURFACE_STYLE="$DEFAULT_SURFACE_STYLE"
+    [ -z "$SPACING_DENSITY" ]   && SPACING_DENSITY="$DEFAULT_SPACING_DENSITY"
+    [ -z "$FEAT_ONBOARDING" ]   && FEAT_ONBOARDING="$DEFAULT_FEAT_ONBOARDING"
+    [ -z "$FEAT_RADAR_UNLOCK" ] && FEAT_RADAR_UNLOCK="$DEFAULT_FEAT_RADAR_UNLOCK"
+    [ -z "$FEAT_LEFT_BEHIND" ]  && FEAT_LEFT_BEHIND="$DEFAULT_FEAT_LEFT_BEHIND"
+    [ -z "$FEAT_REVIEW" ]       && FEAT_REVIEW="$DEFAULT_FEAT_REVIEW"
+    [ -z "$REVENUECAT_KEY" ]    && REVENUECAT_KEY="$DEFAULT_REVENUECAT_KEY"
+    [ -z "$TELEMETRY_ID" ]      && TELEMETRY_ID="$DEFAULT_TELEMETRY_ID"
+    [ -z "$PRIVACY_URL" ]       && PRIVACY_URL="$DEFAULT_PRIVACY_URL"
     [ -z "$TERMS_URL" ]        && TERMS_URL="$DEFAULT_TERMS_URL"
 
     info "  Loaded configuration from $config_file"

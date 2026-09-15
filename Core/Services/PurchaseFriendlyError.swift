@@ -14,7 +14,7 @@ public enum PurchaseFriendlyError: Error, LocalizedError, Sendable, Equatable {
     public var errorDescription: String? {
         switch self {
         case .ownershipConflict:
-            return "This subscription is already linked to another account. Please sign in with the correct account to continue."
+            return NSLocalizedString("This purchase belongs to a different Apple ID. Sign in with that Apple ID and tap Restore.", comment: "")
         case .cancelled:
             return NSLocalizedString("Purchase cancelled", comment: "")
         case .notAllowed:

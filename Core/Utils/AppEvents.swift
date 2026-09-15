@@ -5,16 +5,17 @@
 import Foundation
 
 extension Notification.Name {
-    static let authStatusDidChange = Notification.Name("authStatusDidChange")
-    static let profileDidChange = Notification.Name("profileDidChange")
-    static let subscriptionDidChange = Notification.Name("subscriptionDidChange")
-    /// Posted when the user signs out. The caching layer listens for this
-    /// notification to automatically clear all cached personal data.
-    static let userDidSignOut = Notification.Name("userDidSignOut")
+    /// Posted by the purchases layer whenever entitlements may have changed.
+    static let entitlementsDidChange = Notification.Name("entitlementsDidChange")
+    /// Posted when the tracked headphones connect to this device.
+    static let headphonesDidConnect = Notification.Name("headphonesDidConnect")
+    /// Posted when the tracked headphones disconnect from this device.
+    /// `Modules/LeftBehind` listens for this to arm a "left behind" alert.
+    static let headphonesDidDisconnect = Notification.Name("headphonesDidDisconnect")
 }
 
-// Keys for subscriptionDidChange userInfo payload
-public enum SubscriptionEventKey {
-    public static let productName = "productName"   // String
-    public static let expiresAt = "expiresAt"       // Date
+/// Keys for the `headphonesDidConnect` / `headphonesDidDisconnect` payloads.
+public enum HeadphoneEventKey {
+    public static let deviceId = "deviceId"     // String (CBPeripheral identifier)
+    public static let deviceName = "deviceName" // String
 }
