@@ -413,9 +413,11 @@ extension BluetoothFinder {
             while !Task.isCancelled {
                 guard let self, self.isDemoMode else { return }
                 // Sweeps roughly -92…-44 dBm, so the dial travels the full
-                // cool → warm ramp and back.
+                // cool → warm ramp and back. One cycle takes about a minute —
+                // slow enough to read each proximity description before it
+                // changes, and a sine naturally lingers at both extremes.
                 self.ingestRSSI(Int(-68.0 + 24.0 * sin(tick)))
-                tick += 0.18
+                tick += 0.05
                 try? await Task.sleep(nanoseconds: 500_000_000)
             }
         }
