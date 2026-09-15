@@ -42,7 +42,18 @@ struct FinderDetectView: View {
         .sheet(isPresented: $showAlertsPaywall) {
             LeftBehindPaywallView()
         }
+        .onChange(of: finder.state) { newState in
+            // On the transition, not on appear — coming back from the radar
+            // shouldn't buzz again.
+            if case .found = newState { playFoundHaptic() }
+        }
         .onDisappear { finder.stopScan() }
+    }
+
+    private func playFoundHaptic() {
+        #if canImport(UIKit)
+        UINotificationFeedbackGenerator().notificationOccurred(.success)
+        #endif
     }
 
     // MARK: - Status
@@ -259,6 +270,14 @@ private struct FinderStatusCard: View {
 private struct FoundCard: View {
     let device: DiscoveredDevice
 
+    /// Three layers, all on different clocks: a slow breathing halo, a ring
+    /// that sweeps outward every couple of seconds, and a one-off spring as
+    /// the mark lands. Staggering them is what keeps it from looking like a
+    /// loading spinner.
+    @State private var landed = false
+    @State private var breathing = false
+    @State private var sweeping = false
+
     var body: some View {
         VStack(spacing: DS.Spacing.lg) {
             ZStack {
@@ -267,13 +286,36 @@ private struct FoundCard: View {
                                          center: .center, startRadius: 0, endRadius: 90))
                     .frame(width: 180, height: 180)
                     .blur(radius: 24)
-                Circle().fill(DS.success.opacity(0.15)).frame(width: 104, height: 104)
+                    .scaleEffect(breathing ? 1.08 : 0.9)
+                    .opacity(breathing ? 0.85 : 0.5)
+                    .animation(.easeInOut(duration: 2.6).repeatForever(autoreverses: true), value: breathing)
+
+                Circle()
+                    .strokeBorder(DS.success.opacity(0.4), lineWidth: 1.5)
+                    .frame(width: 112, height: 112)
+                    .blur(radius: 1.5)
+                    .scaleEffect(sweeping ? 1.7 : 0.95)
+                    .opacity(sweeping ? 0 : 0.85)
+                    .animation(.easeOut(duration: 2.4).repeatForever(autoreverses: false), value: sweeping)
+
+                Circle()
+                    .fill(DS.success.opacity(0.15))
+                    .frame(width: 104, height: 104)
+                    .scaleEffect(landed ? 1 : 0.75)
+
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 46, weight: .semibold))
                     .foregroundStyle(DS.success)
                     .shadow(color: DS.success.opacity(0.6), radius: 14)
+                    .scaleEffect(landed ? 1 : 0.5)
+                    .opacity(landed ? 1 : 0)
             }
             .frame(height: 130)
+            .onAppear {
+                withAnimation(DS.Motion.spring) { landed = true }
+                breathing = true
+                sweeping = true
+            }
 
             VStack(spacing: DS.Spacing.sm) {
                 Text("finder.found.title").appFont(.title3)

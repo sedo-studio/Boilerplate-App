@@ -113,7 +113,9 @@ struct RadarView: View {
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showAlertsPaywall) { LeftBehindPaywallView() }
         .sheet(isPresented: $showRadarPaywall, onDismiss: handleRadarPaywallDismiss) {
-            RadarUnlockPaywallView(followsPreview: true)
+            // Only claim they watched it work if a real reading actually
+            // arrived. On the timeout path they saw a dim, silent dial.
+            RadarUnlockPaywallView(followsPreview: didStartLiveCountdown)
         }
         .onAppear {
             openedAt = Date()
