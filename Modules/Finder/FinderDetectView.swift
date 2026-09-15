@@ -30,7 +30,6 @@ struct FinderDetectView: View {
                 VStack(spacing: DS.Spacing.xl) {
                     statusArea
                     actionArea
-                    honestyNote
                 }
                 .padding(DS.Spacing.lg)
                 .frame(maxWidth: .infinity)
@@ -158,18 +157,6 @@ struct FinderDetectView: View {
         }
     }
 
-    private var honestyNote: some View {
-        HStack(alignment: .top, spacing: DS.Spacing.sm) {
-            Image(systemName: "info.circle")
-                .foregroundStyle(DS.Colors.textSecondary)
-            Text("finder.honest.note")
-                .appFont(.footnote)
-                .foregroundStyle(DS.Colors.textSecondary)
-        }
-        .padding(DS.Spacing.md)
-        .dsCard(radius: DS.Radius.md)
-    }
-
     // MARK: - Intent
 
     private func startScan() {
@@ -293,10 +280,6 @@ private struct FoundCard: View {
                 Text(device.name.isEmpty ? String(localized: "finder.device.unknown") : device.name)
                     .appFont(.headline)
                     .foregroundStyle(DS.accent)
-                Text("finder.found.body")
-                    .appFont(.body)
-                    .foregroundStyle(DS.Colors.textSecondary)
-                    .multilineTextAlignment(.center)
             }
         }
         .frame(maxWidth: .infinity)

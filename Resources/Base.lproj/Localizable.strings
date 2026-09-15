@@ -30,7 +30,6 @@
 "finder.scanning.title" = "Looking around…";
 "finder.scanning.body" = "Move slowly through the room while we listen for your headphones.";
 "finder.found.title" = "Found nearby";
-"finder.found.body" = "They're within Bluetooth range of this iPhone — roughly the size of a flat or a small office.";
 "finder.found.cta" = "Show me how close";
 "finder.found.gotthem" = "I've got them";
 "finder.recovered.title" = "Nice one";
@@ -57,7 +56,6 @@
 "finder.picker.empty" = "Nothing seen yet. Start a scan and keep this list open.";
 "finder.picker.connected" = "Connected";
 "finder.picker.footer" = "Pick the device you want to track. We'll remember it and look for it first next time.";
-"finder.honest.note" = "We work from Bluetooth signal strength. That tells you how close you are, not which direction to walk — no third-party app can do direction for AirPods.";
 
 /* MARK: - Radar (paid) */
 "radar.title" = "Proximity";
