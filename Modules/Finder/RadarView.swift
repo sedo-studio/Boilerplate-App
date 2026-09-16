@@ -142,7 +142,7 @@ struct RadarView: View {
     }
 
     private var tint: Color {
-        DS.Colors.blend(DS.cool, DS.warm, amount: finder.hasLiveReading ? finder.proximity.intensity : 0)
+        DS.Colors.temperature(finder.hasLiveReading ? finder.proximity.intensity : 0)
     }
 
     // MARK: - Glimpse
@@ -201,79 +201,140 @@ private struct RadarDial: View {
     let isLive: Bool
     @Binding var pulse: Bool
 
+    /// Light rolls around the rim continuously. Deliberately a symmetric
+    /// shimmer rather than a sweeping radar line — a line that travels round
+    /// the dial reads as "scanning in that direction", which is precisely the
+    /// impression this app must never give.
+    @State private var spin = false
+
     private let size: CGFloat = 320
-    private let ringDiameter: CGFloat = 196
+    private let ringDiameter: CGFloat = 200
+    private let orbDiameter: CGFloat = 150
 
     /// Closer devices pulse faster — the feedback loop that makes sweeping a
     /// room feel responsive.
     private var pulseDuration: Double { 2.6 - 1.4 * intensity }
+    private var orbScale: CGFloat { 0.62 + 0.38 * intensity }
 
     var body: some View {
         ZStack {
-            // Outer halo — the soft bloom that carries most of the colour.
-            Circle()
-                .fill(
-                    RadialGradient(colors: [tint.opacity(0.55), tint.opacity(0)],
-                                   center: .center, startRadius: 0, endRadius: size / 2)
-                )
-                .frame(width: size, height: size)
-                .blur(radius: 45)
-                .scaleEffect(0.75 + 0.4 * intensity)
-
-            // Expanding rings, blurred so they read as light rather than line art.
-            ForEach(0..<3, id: \.self) { index in
-                Circle()
-                    .strokeBorder(tint.opacity(0.4), lineWidth: 1.5)
-                    .frame(width: ringDiameter, height: ringDiameter)
-                    .blur(radius: 2)
-                    .scaleEffect(pulse ? 1.45 : 0.55)
-                    .opacity(pulse ? 0 : 0.9)
-                    .animation(
-                        .easeOut(duration: pulseDuration)
-                        .repeatForever(autoreverses: false)
-                        .delay(Double(index) * pulseDuration / 3),
-                        value: pulse
-                    )
-            }
-
-            // The dial edge.
-            Circle()
-                .strokeBorder(
-                    AngularGradient(colors: [tint.opacity(0.9), tint.opacity(0.15), tint.opacity(0.9)],
-                                    center: .center),
-                    lineWidth: 1.5
-                )
-                .frame(width: ringDiameter, height: ringDiameter)
-                .blur(radius: 0.5)
-                .shadow(color: tint.opacity(0.6), radius: 18)
-
-            // Core orb — grows and brightens with proximity.
-            Circle()
-                .fill(
-                    RadialGradient(colors: [.white.opacity(0.9), tint.opacity(0.8), tint.opacity(0)],
-                                   center: .center, startRadius: 1, endRadius: 80)
-                )
-                .frame(width: 150, height: 150)
-                .blur(radius: 14)
-                .scaleEffect(0.45 + 0.65 * intensity)
-                .shadow(color: tint.opacity(0.7), radius: 30)
-
-            if isLive {
-                VStack(spacing: DS.Spacing.xs) {
-                    Image(systemName: trend.systemImage)
-                        .font(.system(size: 22, weight: .semibold))
-                    Text(LocalizedStringKey(trend.titleKey))
-                        .appFont(.footnoteSemibold)
-                }
-                .foregroundStyle(.white)
-                .shadow(color: tint.opacity(0.8), radius: 12)
-            }
+            bloom
+            pulseRings
+            dialEdge
+            orb
+            if isLive { label }
         }
         .frame(width: size, height: size)
         .animation(.easeInOut(duration: DS.Motion.slow), value: intensity)
         .animation(.easeInOut(duration: DS.Motion.slow), value: tint)
+        .onAppear { spin = true }
         .accessibilityElement()
         .accessibilityLabel(Text(LocalizedStringKey(trend.titleKey)))
+    }
+
+    /// Soft bloom that throws the dial's colour onto the background.
+    private var bloom: some View {
+        Circle()
+            .fill(RadialGradient(colors: [tint.opacity(0.5), tint.opacity(0)],
+                                 center: .center, startRadius: 0, endRadius: size / 2))
+            .frame(width: size, height: size)
+            .blur(radius: 45)
+            .scaleEffect(0.75 + 0.4 * intensity)
+    }
+
+    private var pulseRings: some View {
+        ForEach(0..<3, id: \.self) { index in
+            Circle()
+                .strokeBorder(tint.opacity(0.35), lineWidth: 1.5)
+                .frame(width: ringDiameter, height: ringDiameter)
+                .blur(radius: 2)
+                .scaleEffect(pulse ? 1.45 : 0.55)
+                .opacity(pulse ? 0 : 0.9)
+                .animation(
+                    .easeOut(duration: pulseDuration)
+                    .repeatForever(autoreverses: false)
+                    .delay(Double(index) * pulseDuration / 3),
+                    value: pulse
+                )
+        }
+    }
+
+    private var dialEdge: some View {
+        Circle()
+            .strokeBorder(
+                AngularGradient(colors: [tint.opacity(0.1), tint.opacity(0.85),
+                                         tint.opacity(0.1), tint.opacity(0.85),
+                                         tint.opacity(0.1)],
+                                center: .center),
+                lineWidth: 1.5
+            )
+            .frame(width: ringDiameter, height: ringDiameter)
+            .blur(radius: 0.6)
+            .rotationEffect(.degrees(spin ? 360 : 0))
+            .animation(.linear(duration: 14).repeatForever(autoreverses: false), value: spin)
+            .shadow(color: tint.opacity(0.5), radius: 16)
+    }
+
+    /// A lit sphere rather than a flat blob: the fill is offset toward the top
+    /// left so one side catches the light, a specular highlight sits on that
+    /// side, and the opposite edge gets a darkened rim. That combination is
+    /// what the eye reads as roundness.
+    private var orb: some View {
+        ZStack {
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [tint.opacity(0.98), tint.opacity(0.75), tint.opacity(0.25), tint.opacity(0)],
+                        center: UnitPoint(x: 0.36, y: 0.3),
+                        startRadius: 2,
+                        endRadius: orbDiameter * 0.78
+                    )
+                )
+                .frame(width: orbDiameter, height: orbDiameter)
+                .blur(radius: 8)
+
+            // Shaded far edge — the shadow side of the sphere.
+            Circle()
+                .fill(
+                    RadialGradient(colors: [.clear, .black.opacity(0.35)],
+                                   center: UnitPoint(x: 0.34, y: 0.28),
+                                   startRadius: orbDiameter * 0.2,
+                                   endRadius: orbDiameter * 0.62)
+                )
+                .frame(width: orbDiameter, height: orbDiameter)
+                .blendMode(.multiply)
+                .blur(radius: 6)
+
+            // Specular highlight.
+            Ellipse()
+                .fill(
+                    RadialGradient(colors: [.white.opacity(0.75), .white.opacity(0)],
+                                   center: .center, startRadius: 0, endRadius: orbDiameter * 0.22)
+                )
+                .frame(width: orbDiameter * 0.46, height: orbDiameter * 0.34)
+                .blur(radius: 8)
+                .offset(x: -orbDiameter * 0.16, y: -orbDiameter * 0.2)
+
+            // Rim light, brightest where the shadow side begins.
+            Circle()
+                .strokeBorder(
+                    LinearGradient(colors: [.white.opacity(0.35), .clear, tint.opacity(0.5)],
+                                   startPoint: .topLeading, endPoint: .bottomTrailing),
+                    lineWidth: 1
+                )
+                .frame(width: orbDiameter * 0.92, height: orbDiameter * 0.92)
+                .blur(radius: 1.5)
+        }
+        .scaleEffect(orbScale)
+        .shadow(color: tint.opacity(0.6), radius: 34)
+    }
+
+    private var label: some View {
+        Text(LocalizedStringKey(trend.titleKey))
+            .appFont(.footnoteSemibold)
+            .foregroundStyle(.white)
+            .shadow(color: .black.opacity(0.35), radius: 6)
+            .transition(.opacity)
     }
 }
 

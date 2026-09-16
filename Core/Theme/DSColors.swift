@@ -113,8 +113,28 @@ extension DS {
 
         // MARK: Helpers
 
+        /// Colour for a signal strength on 0 (weakest) … 1 (strongest),
+        /// walking the multi-stop temperature ramp in `DS.temperatureStops`.
+        ///
+        /// Each segment is blended separately. Blending the endpoints directly
+        /// would run blue → red through magenta and put purple — a colour that
+        /// reads as neither hot nor cold — right in the middle of the range.
+        public static func temperature(_ amount: Double) -> Color {
+            let t = min(max(amount, 0), 1)
+            let stops = DS.temperatureStops
+            guard let upperIndex = stops.firstIndex(where: { $0.position >= t }) else {
+                return stops[stops.count - 1].color
+            }
+            guard upperIndex > 0 else { return stops[0].color }
+
+            let lower = stops[upperIndex - 1]
+            let upper = stops[upperIndex]
+            let span = upper.position - lower.position
+            let localT = span > 0 ? (t - lower.position) / span : 0
+            return blend(lower.color, upper.color, amount: localT)
+        }
+
         /// Mixes two colors. `amount` 0 returns `from`, 1 returns `to`.
-        /// The radar uses this to ramp cool → warm as the signal strengthens.
         public static func blend(_ from: Color, _ to: Color, amount: Double) -> Color {
             #if canImport(UIKit)
             let t = min(max(amount, 0), 1)

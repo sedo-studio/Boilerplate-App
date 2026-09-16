@@ -34,10 +34,23 @@ public enum DS {
     public static let primaryHex: String = "#8E7CFF"   // lilac — gradients, glow
     public static let accentHex: String  = "#6C5CE7"   // periwinkle — buttons, rings
 
-    // Proximity temperature. The radar blends cool → warm as the signal
-    // strengthens, which is the visual form of "getting warmer".
-    public static let coolHex: String = "#5B7CFF"
-    public static let warmHex: String = "#FF6B8A"
+    // =================================================================
+    // PROXIMITY TEMPERATURE
+    // The radar ramps through these as the signal strengthens — the visual
+    // form of "getting warmer".
+    //
+    // Five stops, not two, and that is the whole point: interpolating blue
+    // straight to red in RGB passes through magenta, so a two-colour ramp
+    // spends its middle in purple, which reads as neither hot nor cold.
+    // Going via cyan, yellow and orange keeps every intermediate colour on
+    // the temperature scale.
+    // =================================================================
+
+    public static let coldHex: String = "#0A84FF"   // 0.00 — bright blue, weakest
+    public static let chillHex: String = "#00D1FF"  // 0.28 — cyan
+    public static let tepidHex: String = "#FFD60A"  // 0.58 — yellow
+    public static let warmHex: String = "#FF9F0A"   // 0.80 — orange
+    public static let hotHex: String = "#FF3B30"    // 1.00 — bright red, strongest
 
     // =================================================================
     // NEUTRAL PALETTE
@@ -174,8 +187,16 @@ public enum DS {
     public static var primary: Color { Color(hex: primaryHex) ?? .purple }
     public static var accent:  Color { Color(hex: accentHex) ?? .orange }
 
-    public static var cool: Color { Color(hex: coolHex) ?? .blue }
-    public static var warm: Color { Color(hex: warmHex) ?? .pink }
+    public static var cold: Color { Color(hex: coldHex) ?? .blue }
+    public static var chill: Color { Color(hex: chillHex) ?? .cyan }
+    public static var tepid: Color { Color(hex: tepidHex) ?? .yellow }
+    public static var warm: Color { Color(hex: warmHex) ?? .orange }
+    public static var hot: Color { Color(hex: hotHex) ?? .red }
+
+    /// Ordered cold → hot, with the position each stop sits at on 0…1.
+    public static var temperatureStops: [(position: Double, color: Color)] {
+        [(0.0, cold), (0.28, chill), (0.58, tepid), (0.80, warm), (1.0, hot)]
+    }
 
     public static var success: Color { Color(hex: successHex) ?? .green }
     public static var warning: Color { Color(hex: warningHex) ?? .yellow }

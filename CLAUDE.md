@@ -191,7 +191,7 @@ All theming flows from `Core/Theme/DesignSystem.swift` (the `DS` namespace).
 | Need | Use |
 |---|---|
 | Brand color | `DS.primary` (lilac), `DS.accent` (periwinkle) |
-| Proximity temperature | `DS.cool` → `DS.warm`, mixed with `DS.Colors.blend` |
+| Proximity temperature | `DS.Colors.temperature(0…1)` over `DS.temperatureStops` |
 | Status | `DS.success`, `DS.warning`, `DS.danger`, `DS.info` |
 | Text | `DS.Colors.textPrimary` / `.textSecondary` / `.textTertiary` |
 | Spacing | `DS.Spacing.xs sm md lg xl xxl xxxl` |
@@ -202,6 +202,11 @@ Typography: never call `.font(...)` with a system font — use `.appFont(_:)`
 with an `AppTextStyle` case, and `DSEyebrow` for the small tracked uppercase
 label above a heading. Surfaces: `.dsCard()`, `.dsCardContent()`, `.dsInput()`,
 `DSPrimaryButtonStyle()` and friends.
+
+**Proximity colour:** never interpolate the ends directly. Blue → red in RGB
+passes through magenta, which reads as neither hot nor cold, so the ramp goes
+via cyan, yellow and orange with `DS.Colors.temperature`. A test asserts no
+point on the ramp is purple.
 
 **The look:** dark-first (the app defaults to dark and the neutral scale is
 indigo-tinted, not grey), translucent `.glass` cards over a slow drifting

@@ -131,13 +131,6 @@ enum ProximityTrend: Sendable, Equatable {
         }
     }
 
-    var systemImage: String {
-        switch self {
-        case .warmer: return "arrow.up.circle.fill"
-        case .colder: return "arrow.down.circle.fill"
-        case .steady: return "equal.circle.fill"
-        }
-    }
 }
 
 // MARK: - Smoothing

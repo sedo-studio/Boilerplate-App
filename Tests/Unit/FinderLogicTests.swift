@@ -5,6 +5,7 @@
 //
 
 import XCTest
+import SwiftUI
 @testable import FindMyHeadphones
 
 final class ProximityLevelTests: XCTestCase {
@@ -23,6 +24,52 @@ final class ProximityLevelTests: XCTestCase {
         XCTAssertTrue(ProximityLevel.far.intensity < ProximityLevel.nearby.intensity)
         XCTAssertTrue(ProximityLevel.nearby.intensity < ProximityLevel.close.intensity)
         XCTAssertTrue(ProximityLevel.close.intensity < ProximityLevel.veryClose.intensity)
+    }
+}
+
+final class TemperatureRampTests: XCTestCase {
+    private func components(_ color: Color) -> (r: CGFloat, g: CGFloat, b: CGFloat) {
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        UIColor(color).getRed(&r, green: &g, blue: &b, alpha: &a)
+        return (r, g, b)
+    }
+
+    func testEndsAreBlueAndRed() {
+        let cold = components(DS.Colors.temperature(0))
+        XCTAssertGreaterThan(cold.b, cold.r, "The weakest signal must read as blue.")
+
+        let hot = components(DS.Colors.temperature(1))
+        XCTAssertGreaterThan(hot.r, hot.b, "The strongest signal must read as red.")
+    }
+
+    func testRampNeverPassesThroughPurple() {
+        // The bug this guards: interpolating blue straight to red in RGB runs
+        // through magenta, putting purple — neither hot nor cold — in the
+        // middle of the range. Purple means high red AND high blue at once.
+        for step in 0...20 {
+            let t = Double(step) / 20
+            let c = components(DS.Colors.temperature(t))
+            XCTAssertFalse(c.r > 0.5 && c.b > 0.5,
+                           "t=\(t) is purple: r=\(c.r) b=\(c.b)")
+        }
+    }
+
+    func testWarmsMonotonically() {
+        // Red should only ever climb, and blue only ever fall, as signal grows.
+        var lastRed: CGFloat = -1
+        var lastBlue: CGFloat = 2
+        for step in 0...20 {
+            let c = components(DS.Colors.temperature(Double(step) / 20))
+            XCTAssertGreaterThanOrEqual(c.r, lastRed - 0.01)
+            XCTAssertLessThanOrEqual(c.b, lastBlue + 0.01)
+            lastRed = c.r
+            lastBlue = c.b
+        }
+    }
+
+    func testClampsOutOfRangeInput() {
+        XCTAssertEqual(components(DS.Colors.temperature(-5)).b, components(DS.Colors.temperature(0)).b)
+        XCTAssertEqual(components(DS.Colors.temperature(99)).r, components(DS.Colors.temperature(1)).r)
     }
 }
 

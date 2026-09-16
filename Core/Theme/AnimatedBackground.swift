@@ -19,7 +19,7 @@ struct AnimatedBackground: View {
             TimelineView(.animation) { context in
                 Canvas { ctx, size in
                     let t = context.date.timeIntervalSinceReferenceDate
-                    let colors = [DS.primary, DS.accent, DS.cool]
+                    let colors = [DS.primary, DS.accent, DS.cold]
                     for i in 0..<5 {
                         // Slower than a lava lamp: a full loop takes ~75s.
                         let phase = t / 12 + Double(i) * 0.5
