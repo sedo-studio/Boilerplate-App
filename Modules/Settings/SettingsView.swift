@@ -197,10 +197,15 @@ struct SettingsView: View {
                 Label("settings.dev.demo", systemImage: "wand.and.stars")
             }
             Button {
-                if let local = container.purchasesService as? LocalPurchasesService {
-                    local.resetLocalPurchases()
-                    Task { await entitlements.reload() }
+                // Only the stub's purchases are ours to undo. A real sandbox
+                // purchase belongs to the Apple account that made it, so say
+                // so rather than looking broken.
+                guard let local = container.purchasesService as? LocalPurchasesService else {
+                    message = String(localized: "settings.dev.resetpurchases.unavailable")
+                    return
                 }
+                local.resetLocalPurchases()
+                Task { await entitlements.reload() }
             } label: {
                 Label("settings.dev.resetpurchases", systemImage: "arrow.uturn.backward")
             }

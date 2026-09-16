@@ -175,6 +175,7 @@
 "settings.dev.section" = "Developer";
 "settings.dev.demo" = "Simulator demo mode";
 "settings.dev.resetpurchases" = "Reset test purchases";
+"settings.dev.resetpurchases.unavailable" = "RevenueCat is serving purchases, so this only resets the local stub. To test the paywall again, sign in as another sandbox tester or clear this one's purchase history in App Store Connect.";
 "settings.dev.store" = "Check store connection";
 "settings.dev.store.checking" = "Asking the store…";
 "settings.dev.footer" = "Demo mode feeds a fake device and a drifting signal so the finder and radar can be reviewed without Bluetooth. Debug builds only.";
