@@ -77,6 +77,15 @@ def unfilter(raw, width, height, bpp):
     return out
 
 
+def resize_hint(path, width, height):
+    """macOS ships sips, so a wrong-sized export is one command from fixed."""
+    quoted = path if " " not in path else '"%s"' % path
+    if width == height:
+        return "resize it with:  sips -z 1024 1024 %s --out ~/Desktop/icon1024.png" % quoted
+    return ("crop it square first — %dx%d would be squashed by a straight resize"
+            % (width, height))
+
+
 def to_rgb(path, background):
     data = open(path, "rb").read()
     chunks = read_chunks(data)
@@ -86,7 +95,8 @@ def to_rgb(path, background):
     width, height, depth, color_type, _, _, interlace = struct.unpack(">IIBBBBB", header[:13])
 
     if (width, height) != (1024, 1024):
-        fail("icon must be 1024x1024, this one is %dx%d" % (width, height))
+        fail("icon must be 1024x1024, this one is %dx%d\n       %s"
+             % (width, height, resize_hint(path, width, height)))
     if interlace:
         fail("interlaced PNGs are not supported — re-export without interlacing")
     if depth != 8:
