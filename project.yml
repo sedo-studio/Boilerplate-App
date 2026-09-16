@@ -11,7 +11,11 @@ settings:
     IPHONEOS_DEPLOYMENT_TARGET: 16.0
     # Signing lives here rather than in Xcode's UI: the .xcodeproj is
     # regenerated from this file, which would wipe anything set by hand.
-    DEVELOPMENT_TEAM: RHHZ3ABR92
+    #
+    # SEDO STUDIO LIMITED — the paid organization membership. Not the free
+    # Personal Team Xcode makes for on-device testing: that one cannot publish
+    # or sell in-app purchases, and it never appears in the developer portal.
+    DEVELOPMENT_TEAM: 2Z5LQ3U8QM
     CODE_SIGN_STYLE: Automatic
 targets:
   FindMyHeadphones:
