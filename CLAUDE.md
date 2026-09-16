@@ -228,6 +228,13 @@ This is the part worth understanding properly.
   hop back with `Task { @MainActor in … }`.
 - **`FinderDetectView.swift`** — free scan + "Found nearby" + troubleshooting.
 - **`RadarView.swift`** — the paid dial.
+- **`ProximityHaptics.swift`** — the tick that speeds up as the signal
+  strengthens. CoreHaptics where available, `UIImpactFeedbackGenerator`
+  otherwise. It stops on background and on leaving the screen, and the user can
+  turn it off in Settings → Feedback.
+- **`ProximityMotes.swift`** — `Canvas` particles that travel inward while
+  warming and outward while cooling. They converge from every angle at once;
+  a stream from one side would imply a bearing.
 
 ### How it finds things (and the limits)
 

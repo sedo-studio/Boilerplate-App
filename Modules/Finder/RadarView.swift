@@ -16,9 +16,12 @@ struct RadarView: View {
     var isPreview: Bool = false
 
     @Environment(\.container) private var container
+    @Environment(\.scenePhase) private var scenePhase
     @EnvironmentObject private var entitlements: Entitlements
     @EnvironmentObject private var router: AppRouter
     @StateObject private var finder = BluetoothFinder.shared
+
+    @AppStorage("haptics.proximity") private var hapticsEnabled: Bool = true
 
     @State private var pulse = false
     @State private var openedAt = Date()
@@ -124,15 +127,25 @@ struct RadarView: View {
             beginGlimpse()
         }
         .onChange(of: finder.hasLiveReading) { isLive in
+            syncHaptics()
             // The glimpse is measured in seconds of real signal.
             guard isGlimpse, isLive, !didStartLiveCountdown else { return }
             didStartLiveCountdown = true
             schedulePaywall(after: previewSeconds)
         }
+        .onChange(of: finder.proximity) { _ in
+            ProximityHaptics.shared.update(intensity: intensity)
+        }
+        .onChange(of: hapticsEnabled) { _ in syncHaptics() }
+        .onChange(of: scenePhase) { phase in
+            // Never keep ticking in someone's pocket.
+            phase == .active ? syncHaptics() : ProximityHaptics.shared.stop()
+        }
         .onDisappear {
             previewTimer?.cancel()
             previewTimer = nil
             finder.stopProximityTracking()
+            ProximityHaptics.shared.stop()
         }
     }
 
@@ -143,6 +156,16 @@ struct RadarView: View {
 
     private var tint: Color {
         DS.Colors.temperature(finder.hasLiveReading ? finder.proximity.intensity : 0)
+    }
+
+    /// Ticking only earns its keep once there is a real reading to tick about.
+    private func syncHaptics() {
+        guard hapticsEnabled, finder.hasLiveReading else {
+            ProximityHaptics.shared.stop()
+            return
+        }
+        ProximityHaptics.shared.update(intensity: intensity)
+        ProximityHaptics.shared.start()
     }
 
     // MARK: - Glimpse
@@ -219,6 +242,10 @@ private struct RadarDial: View {
     var body: some View {
         ZStack {
             bloom
+            if isLive {
+                ProximityMotes(intensity: intensity, trend: trend, tint: tint)
+                    .frame(width: size, height: size)
+            }
             pulseRings
             dialEdge
             orb

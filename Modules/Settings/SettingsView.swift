@@ -14,6 +14,7 @@ struct SettingsView: View {
 
     @AppStorage("appearanceDark") private var appearanceDark: Bool = true
     @AppStorage("appearanceLocked") private var appearanceLocked: Bool = true
+    @AppStorage("haptics.proximity") private var hapticsEnabled: Bool = true
 
     @State private var showRadarPaywall = false
     @State private var showAlertsPaywall = false
@@ -30,6 +31,7 @@ struct SettingsView: View {
                 if flags.leftBehindAlerts { alertsSection }
                 purchasesSection
                 appearanceSection
+                feedbackSection
                 aboutSection
                 #if DEBUG
                 developerSection
@@ -147,6 +149,18 @@ struct SettingsView: View {
             )) {
                 Label("settings.darkmode", systemImage: "moon.fill")
             }
+        }
+    }
+
+    private var feedbackSection: some View {
+        Section {
+            Toggle(isOn: $hapticsEnabled) {
+                Label("settings.haptics", systemImage: "waveform")
+            }
+        } header: {
+            Text("settings.feel.section")
+        } footer: {
+            Text("settings.feel.footer")
         }
     }
 

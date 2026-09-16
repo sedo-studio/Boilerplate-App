@@ -159,6 +159,10 @@
 "settings.appearance" = "Appearance";
 "settings.darkmode" = "Dark mode";
 
+"settings.feel.section" = "Feedback";
+"settings.haptics" = "Vibrate as you get closer";
+"settings.feel.footer" = "A soft tick that speeds up as the signal strengthens, so you can search with your hands instead of watching the screen.";
+
 "settings.about.section" = "About";
 "settings.rate" = "Rate the app";
 "settings.privacy" = "Privacy policy";
