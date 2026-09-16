@@ -151,6 +151,14 @@ struct RadarView: View {
         .onChange(of: finder.proximity) { _ in
             ProximityHaptics.shared.update(intensity: intensity)
         }
+        .onChange(of: finder.proximityUnavailable) { unavailable in
+            // A paid screen that cannot measure anything is the failure worth
+            // knowing the rate of, so record it with what the user owns.
+            guard unavailable else { return }
+            container.analytics.track(AnalyticsEvent.radarNoSignal, properties: [
+                AnalyticsProperty.source: entitlements.isRadarUnlocked ? "unlocked" : "preview"
+            ])
+        }
         .onChange(of: hapticsEnabled) { _ in syncHaptics() }
         .onChange(of: scenePhase) { phase in
             // Never keep ticking in someone's pocket.

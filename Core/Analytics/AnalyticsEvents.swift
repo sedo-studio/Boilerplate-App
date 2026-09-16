@@ -16,6 +16,12 @@ public enum AnalyticsEvent {
     /// The user confirmed they physically recovered the headphones.
     public static let findSucceeded = "Finder.Find.Succeeded"
 
+    // Radar outcome
+    /// The radar ran but the headphones never reported a readable signal —
+    /// the paid feature failing for someone who has just paid for it, so worth
+    /// watching alongside `radarPaywallPurchased`.
+    public static let radarNoSignal = "Radar.NoSignal"
+
     // Paywall #1 — one-time radar unlock
     /// The few seconds of live radar shown before the paywall. Compare against
     /// `radarPaywallPurchased` to see whether the glimpse is earning its place.
@@ -41,4 +47,10 @@ public enum AnalyticsProperty {
     public static let source = "source"
     public static let proximity = "proximity"
     public static let durationSeconds = "durationSeconds"
+    /// Whether the device found reports a signal strength. A find that is not
+    /// measurable can never drive the radar, so this splits "we found them"
+    /// from "we can help you walk to them".
+    public static let measurable = "measurable"
+    /// Whether this was the remembered device rather than a fresh discovery.
+    public static let remembered = "remembered"
 }

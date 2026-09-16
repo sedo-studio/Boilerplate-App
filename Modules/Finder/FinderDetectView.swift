@@ -20,6 +20,13 @@ struct FinderDetectView: View {
     @State private var showDevicePicker = false
     @State private var showAlertsPaywall = false
     @State private var scanStartedAt: Date?
+    /// One outcome event per scan. The finder can settle on `.found` more than
+    /// once in a run — the connected-peripheral shortcut answers early and a
+    /// stronger handle can replace it — and that is one detection, not two.
+    @State private var reportedScanOutcome = false
+    /// Read before the scan runs: a first-ever find saves the device on the
+    /// spot, so asking afterwards would call every discovery "remembered".
+    @State private var rememberedAtScanStart: UUID?
 
     var body: some View {
         ZStack {
@@ -45,6 +52,7 @@ struct FinderDetectView: View {
             // On the transition, not on appear — coming back from the radar
             // shouldn't buzz again.
             if case .found = newState { playFoundHaptic() }
+            recordScanOutcome(newState)
             // The radar hands the hunt back here when it ends, so the wrap-up
             // runs in one place wherever the user tapped "I've got them".
             if case .recovered = newState {
@@ -165,8 +173,40 @@ struct FinderDetectView: View {
 
     private func startScan() {
         scanStartedAt = Date()
+        reportedScanOutcome = false
+        rememberedAtScanStart = finder.savedDeviceId
         container.analytics.track(AnalyticsEvent.scanStarted)
         finder.startScan()
+    }
+
+    /// Closes the detection funnel: every `scanStarted` should be followed by
+    /// exactly one of these, which is what makes the success rate a rate.
+    private func recordScanOutcome(_ state: FinderState) {
+        guard !reportedScanOutcome else { return }
+
+        switch state {
+        case .found(let device):
+            reportedScanOutcome = true
+            var properties = [
+                AnalyticsProperty.measurable: String(device.rssi != nil),
+                AnalyticsProperty.remembered: String(device.id == rememberedAtScanStart)
+            ]
+            if let scanStartedAt {
+                properties[AnalyticsProperty.durationSeconds] = String(Int(Date().timeIntervalSince(scanStartedAt)))
+            }
+            container.analytics.track(AnalyticsEvent.scanFoundDevice, properties: properties)
+
+        case .notFound:
+            reportedScanOutcome = true
+            container.analytics.track(AnalyticsEvent.scanFoundNothing)
+
+        case .unauthorized:
+            reportedScanOutcome = true
+            container.analytics.track(AnalyticsEvent.bluetoothDenied)
+
+        case .idle, .scanning, .poweredOff, .unsupported, .recovered:
+            break
+        }
     }
 
     /// Locked users get the real radar for a few seconds before the paywall —

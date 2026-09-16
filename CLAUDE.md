@@ -134,9 +134,28 @@ Modules/
 
 Resources/               # Assets, Info.plist, Base.lproj + en.lproj
 Tests/                   # XCTest unit tests
+scripts/                 # prepare-app-icon.py (stdlib-only, see below)
 setup.sh                 # writes Secrets.swift + runs xcodegen (keys only)
 project.yml              # XcodeGen spec — signing, bundle id, Info.plist
 ```
+
+### The app icon
+
+`Resources/Assets.xcassets/AppIcon.appiconset` holds one 1024×1024
+`AppIcon1024.png` and Xcode generates the rest. **It must have no alpha
+channel** — the App Store rejects a transparent icon even when every pixel is
+opaque, and Xcode does not strip it for you.
+
+Do not drop a PNG in by hand. Run:
+
+```bash
+python3 scripts/prepare-app-icon.py path/to/icon.png   # optional: #rrggbb backdrop
+xcodegen generate
+```
+
+It flattens any alpha onto the dark neutral (`#0C0A18`), re-encodes as RGB,
+rewrites `Contents.json`, and refuses anything that is not 1024×1024 at 8 bits.
+Standard library only, so it runs on a stock macOS Python.
 
 ---
 
@@ -316,6 +335,17 @@ Event names are constants in `Core/Analytics/AnalyticsEvents.swift`. The funnel
 the app is judged on: detection success rate, paywall #1 view→purchase, paywall
 #2 view→purchase (tracked separately), and review prompts tied to real finds.
 Renaming a constant breaks the historical series in TelemetryDeck.
+
+**A declared event is not a tracked event.** Every scan must close with exactly
+one outcome — `scanFoundDevice`, `scanFoundNothing` or `bluetoothDenied` — or
+the detection success rate is a count, not a rate. `FinderDetectView`
+(`recordScanOutcome`) owns that, and guards it with `reportedScanOutcome`
+because the finder can settle on `.found` more than once in a single run. If you
+add a terminal `FinderState`, give it an outcome there too.
+
+In DEBUG, TelemetryDeck runs with `testMode = true`, so events from Xcode land
+in the dashboard's Test mode bucket rather than polluting real numbers, and each
+one prints as `[Analytics] Sent …` in the console.
 
 ---
 

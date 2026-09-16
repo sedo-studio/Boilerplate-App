@@ -136,7 +136,9 @@ final class BluetoothFinder: NSObject, ObservableObject {
 
     var savedDeviceName: String? { UserDefaults.standard.string(forKey: savedNameKey) }
 
-    private var savedDeviceId: UUID? {
+    /// Internal rather than private: the detect screen reports whether a find
+    /// was the remembered device or a fresh discovery.
+    var savedDeviceId: UUID? {
         UserDefaults.standard.string(forKey: savedIdKey).flatMap(UUID.init(uuidString:))
     }
 

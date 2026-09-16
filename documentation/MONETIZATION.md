@@ -38,7 +38,25 @@ paying customers out of what they bought, silently.
    name, which is what keeps the two paywalls from showing each other's prices.
    (If an offering is missing, the app falls back to the current offering rather
    than showing an empty paywall — useful in development, wrong in production.)
-4. Put the public SDK key in `Config/Secrets.swift` (via `./setup.sh`).
+4. Put the public SDK key in `Config/Secrets.swift` (via `./setup.sh`). Use the
+   **public** app-specific key (`appl_…`), never a secret key — it ships inside
+   the binary.
+5. Check the wiring from the device: **Settings → Developer → Check store
+   connection**. It walks the whole chain and names the broken link:
+
+   ```
+   SDK linked: yes
+   API key: set (appl_a…)
+   Serving: RevenueCat
+   offering 'radar_unlock': $rc_lifetime $9.99
+   offering 'left_behind_alerts': $rc_monthly $4.99
+   owned: nothing
+   ```
+
+   `NO PACKAGES` against an offering means RevenueCat answered but that offering
+   is empty, misnamed, or its product is not yet approved in App Store Connect —
+   the app cannot tell those apart, so check the offering first. `Serving: local
+   stub` means the key never reached the build. Debug builds only.
 
 ## Without RevenueCat
 
@@ -54,9 +72,10 @@ If the SDK is unlinked or the key is empty, `LocalPurchasesService` takes over:
 1. Fresh install → onboarding → scan → "Found nearby".
 2. Tap "Show me how close" → paywall #1 appears → purchase → the radar opens
    automatically on dismiss.
-3. Confirm a find twice → the alerts soft prompt appears (first find is too
-   early; `LeftBehindPromptPolicy` enforces that, and a 14-day cooldown after a
-   decline).
+3. Confirm a find. The first find of each app version spends the moment on the
+   review prompt instead (`FindWrapUp`), so confirm a second find to see the
+   alerts soft prompt — and `LeftBehindPromptPolicy` still wants two finds and
+   applies a 14-day cooldown after a decline.
 4. Settings → restore purchases → both entitlements come back.
 5. Let the subscription lapse in a sandbox account → alerts stop arming on the
    next foreground, without the user doing anything.
@@ -71,3 +90,11 @@ Tracked in TelemetryDeck via `AnalyticsEvent`:
 - `Paywall.Alerts.Viewed` → `Paywall.Alerts.Purchased` — subscription
   conversion, kept separate from the unlock.
 - `Finder.Find.Succeeded` — the moment worth tying a review prompt to.
+- `Radar.NoSignal` — the radar ran but never got a readable signal. Watch this
+  against `Paywall.Radar.Purchased`: it is the paid feature failing for someone
+  who has just paid, and the likeliest refund driver.
+
+`Finder.Scan.Found` carries `measurable`, which is whether the device reports a
+signal strength at all. A find that is not measurable can never drive the radar,
+so it separates "we found them" from "we can walk you to them" — and it is the
+ceiling on what paywall #1 can honestly convert.

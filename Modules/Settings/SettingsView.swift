@@ -20,6 +20,9 @@ struct SettingsView: View {
     @State private var showAlertsPaywall = false
     @State private var showForgetConfirmation = false
     @State private var message: String?
+    #if DEBUG
+    @State private var storeReport: String?
+    #endif
 
     private var flags: FeatureFlags { container.config.featureFlags }
 
@@ -200,6 +203,18 @@ struct SettingsView: View {
                 }
             } label: {
                 Label("settings.dev.resetpurchases", systemImage: "arrow.uturn.backward")
+            }
+            Button {
+                storeReport = String(localized: "settings.dev.store.checking")
+                Task { storeReport = await StoreDiagnostics.gather(container: container).text }
+            } label: {
+                Label("settings.dev.store", systemImage: "stethoscope")
+            }
+            if let storeReport {
+                Text(storeReport)
+                    .appFont(.caption)
+                    .foregroundStyle(DS.Colors.textSecondary)
+                    .textSelection(.enabled)
             }
         } header: {
             Text("settings.dev.section")
