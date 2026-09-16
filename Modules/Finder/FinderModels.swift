@@ -28,10 +28,20 @@ struct DiscoveredDevice: Identifiable, Equatable, Sendable {
         self.isConnected = isConnected
     }
 
-    /// Connected devices rank above measured ones, then strongest signal first.
+    /// Measurable devices rank first, then strongest signal, then connected.
+    ///
+    /// Measurability beats connectedness on purpose. A device connected for
+    /// audio is certainly nearby, but if it reports no signal it is useless to
+    /// the radar — and the same headphones are usually also present as a
+    /// separate advertiser that *can* be measured. Rank that one higher and
+    /// both screens work.
     static func strongestFirst(_ lhs: DiscoveredDevice, _ rhs: DiscoveredDevice) -> Bool {
-        if lhs.isConnected != rhs.isConnected { return lhs.isConnected }
-        return (lhs.rssi ?? Int.min) > (rhs.rssi ?? Int.min)
+        switch (lhs.rssi, rhs.rssi) {
+        case let (left?, right?): return left > right
+        case (nil, _?): return false
+        case (_?, nil): return true
+        case (nil, nil): return lhs.isConnected && !rhs.isConnected
+        }
     }
 }
 
@@ -50,6 +60,25 @@ enum HeadphoneHeuristic {
     static func looksLikeHeadphones(name: String) -> Bool {
         let lowered = name.lowercased()
         return nameFragments.contains { lowered.contains($0) }
+    }
+
+    /// One pair of headphones often shows up twice: once as the classic audio
+    /// link and once as a BLE advertiser whose name carries an "LE-" prefix
+    /// (Bose, Sony and JBL all do this). They are separate CBPeripherals with
+    /// separate identifiers, and only the advertiser reports a signal — so the
+    /// names have to be matched to know they are the same device.
+    static func normalisedName(_ name: String) -> String {
+        var value = name.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        for prefix in ["le-", "le_", "le "] where value.hasPrefix(prefix) {
+            value.removeFirst(prefix.count)
+            break
+        }
+        return value.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    static func isSameDevice(_ lhs: String, _ rhs: String) -> Bool {
+        let left = normalisedName(lhs)
+        return !left.isEmpty && left == normalisedName(rhs)
     }
 }
 

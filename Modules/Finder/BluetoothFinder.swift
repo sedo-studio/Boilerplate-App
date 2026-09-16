@@ -97,9 +97,16 @@ final class BluetoothFinder: NSObject, ObservableObject {
         candidates.filter { HeadphoneHeuristic.looksLikeHeadphones(name: $0.name) || $0.isConnected }
     }
 
-    /// Everything seen, including unnamed peripherals, for the manual picker.
+    /// Everything named, for the manual picker, with each physical device
+    /// listed once — the measurable handle where there is a choice.
     var allNamedCandidates: [DiscoveredDevice] {
-        candidates.filter { !$0.name.isEmpty }
+        var byDevice: [String: DiscoveredDevice] = [:]
+        for device in candidates.filter({ !$0.name.isEmpty }) {
+            let key = HeadphoneHeuristic.normalisedName(device.name)
+            if let existing = byDevice[key], DiscoveredDevice.strongestFirst(existing, device) { continue }
+            byDevice[key] = device
+        }
+        return byDevice.values.sorted(by: DiscoveredDevice.strongestFirst)
     }
 
     // MARK: - Permission
@@ -191,9 +198,11 @@ final class BluetoothFinder: NSObject, ObservableObject {
             register(known, rssi: nil, isConnected: known.state == .connected)
         }
         // If they're already connected for audio they are certainly nearby, so
-        // answer now instead of making the user wait out the scan window.
-        if let connected = bestCandidate(), connected.isConnected {
-            confirmFound(connected)
+        // answer now instead of making the user wait out the scan window. The
+        // device we settle on may not be the connected handle itself — see
+        // `strongestFirst`.
+        if headphoneCandidates.contains(where: { $0.isConnected }), let best = bestCandidate() {
+            confirmFound(best)
         }
 
         central.scanForPeripherals(
@@ -413,9 +422,29 @@ final class BluetoothFinder: NSObject, ObservableObject {
         }
         candidates.sort(by: DiscoveredDevice.strongestFirst)
 
-        guard device.id == trackedDevice?.id || device.id == savedDeviceId else { return }
+        guard isTrackedDevice(device) else { return }
+
+        // Adopt the handle that actually reports a signal. The tracked device
+        // may be the silent connected peripheral while the readings arrive
+        // from the same headphones' LE advertiser under a different
+        // identifier; without this the readings are thrown away.
+        if let current = trackedDevice, current.id != device.id,
+           device.rssi != nil, current.rssi == nil {
+            AppLogger.log("[Finder] Switching to the handle that reports a signal: \(device.name)", level: .debug)
+            UserDefaults.standard.set(device.id.uuidString, forKey: savedIdKey)
+            UserDefaults.standard.set(device.name, forKey: savedNameKey)
+        }
+
         trackedDevice = device
         if let rssi { ingestRSSI(rssi, source: .advertisement) }
+    }
+
+    /// Identifier match, or the same headphones under their other name — see
+    /// `HeadphoneHeuristic.isSameDevice`.
+    private func isTrackedDevice(_ device: DiscoveredDevice) -> Bool {
+        if device.id == trackedDevice?.id || device.id == savedDeviceId { return true }
+        guard let tracked = trackedDevice else { return false }
+        return HeadphoneHeuristic.isSameDevice(tracked.name, device.name)
     }
 
     /// Drops every reading taken so far, so a new scan never shows the last

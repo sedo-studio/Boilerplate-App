@@ -139,6 +139,40 @@ final class HeadphoneHeuristicTests: XCTestCase {
     }
 }
 
+final class DeviceMatchingTests: XCTestCase {
+    func testLEPrefixedAdvertiserIsTheSameDevice() {
+        // A real log from a QC45: the headphones appear twice, once as the
+        // classic audio link and once as "LE-Bose QC45", with different
+        // CBPeripheral identifiers.
+        XCTAssertTrue(HeadphoneHeuristic.isSameDevice("LE-Bose QC45", "Bose QC45"))
+        XCTAssertTrue(HeadphoneHeuristic.isSameDevice("LE_Bose QC45", "bose qc45"))
+        XCTAssertTrue(HeadphoneHeuristic.isSameDevice("LE Bose QC45", "Bose QC45 "))
+    }
+
+    func testDifferentDevicesDoNotMatch() {
+        XCTAssertFalse(HeadphoneHeuristic.isSameDevice("LE-Bose QC45", "Sony WH-1000XM5"))
+        XCTAssertFalse(HeadphoneHeuristic.isSameDevice("", ""), "Unnamed devices must never match each other.")
+        XCTAssertFalse(HeadphoneHeuristic.isSameDevice("LE-", ""))
+    }
+
+    func testMeasurableDeviceOutranksSilentConnectedOne() {
+        let advertiser = DiscoveredDevice(id: UUID(), name: "LE-Bose QC45", rssi: -51)
+        let connectedHandle = DiscoveredDevice(id: UUID(), name: "Bose QC45", rssi: nil, isConnected: true)
+
+        XCTAssertTrue(DiscoveredDevice.strongestFirst(advertiser, connectedHandle),
+                      "A connected handle that reports no signal is useless to the radar.")
+        XCTAssertEqual([connectedHandle, advertiser].sorted(by: DiscoveredDevice.strongestFirst).first?.rssi,
+                       -51)
+    }
+
+    func testStrongerSignalWinsBetweenMeasuredDevices() {
+        let near = DiscoveredDevice(id: UUID(), name: "A", rssi: -44)
+        let far = DiscoveredDevice(id: UUID(), name: "B", rssi: -88)
+        XCTAssertTrue(DiscoveredDevice.strongestFirst(near, far))
+        XCTAssertFalse(DiscoveredDevice.strongestFirst(far, near))
+    }
+}
+
 final class LeftBehindPromptPolicyTests: XCTestCase {
     private var defaults: UserDefaults!
 

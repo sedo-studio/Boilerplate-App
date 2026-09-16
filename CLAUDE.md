@@ -248,6 +248,12 @@ This is the part worth understanding properly.
   2. A GATT connection plus `readRSSI()` polling — keeps working when the
      device stops advertising.
   3. Advertisement RSSI from an `allowDuplicates` scan.
+- **One pair of headphones can appear as two peripherals.** Bose, Sony and
+  JBL expose the classic audio link *and* a BLE advertiser named `LE-<name>`,
+  with different CBPeripheral identifiers — and only the advertiser reports a
+  signal. `HeadphoneHeuristic.isSameDevice` matches them by name, and
+  `strongestFirst` ranks a measurable device above a connected-but-silent one.
+  Ranking connectedness first is what made the radar sit on "Listening…".
 - `rssi` on `DiscoveredDevice` is **optional on purpose**. A device we know
   about but have not measured has `nil` — never a stand-in number. Do not
   "fix" this by defaulting it.
