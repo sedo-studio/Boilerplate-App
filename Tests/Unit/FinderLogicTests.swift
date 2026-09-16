@@ -200,3 +200,32 @@ final class LeftBehindPromptPolicyTests: XCTestCase {
                        "A declined offer should not come back on the very next find.")
     }
 }
+
+final class ReviewPromptPolicyTests: XCTestCase {
+    private let suite = "ReviewPromptPolicyTests"
+    private var defaults: UserDefaults!
+
+    override func setUp() {
+        super.setUp()
+        defaults = UserDefaults(suiteName: suite)!
+        defaults.removePersistentDomain(forName: suite)
+    }
+
+    func testFirstAskOfAVersionIsTheOnlyOne() {
+        XCTAssertFalse(ReviewPromptPolicy.hasAskedThisVersion(defaults: defaults, version: "1.0"))
+        XCTAssertTrue(ReviewPromptPolicy.markAsked(defaults: defaults, version: "1.0"))
+        XCTAssertTrue(ReviewPromptPolicy.hasAskedThisVersion(defaults: defaults, version: "1.0"))
+        XCTAssertFalse(ReviewPromptPolicy.markAsked(defaults: defaults, version: "1.0"),
+                       "iOS ignores a second ask, so the app must hand that moment to something else.")
+    }
+
+    func testANewVersionEarnsAFreshAsk() {
+        XCTAssertTrue(ReviewPromptPolicy.markAsked(defaults: defaults, version: "1.0"))
+        XCTAssertFalse(ReviewPromptPolicy.hasAskedThisVersion(defaults: defaults, version: "1.1"))
+        XCTAssertTrue(ReviewPromptPolicy.markAsked(defaults: defaults, version: "1.1"))
+    }
+
+    func testAppVersionFallsBackRatherThanCrashing() {
+        XCTAssertFalse(ReviewPromptPolicy.appVersion(Bundle(for: ReviewPromptPolicyTests.self)).isEmpty)
+    }
+}

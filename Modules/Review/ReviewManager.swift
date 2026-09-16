@@ -12,16 +12,51 @@
 import Foundation
 import SwiftUI
 
+/// Whether a review has already been asked for on this version. Pure
+/// bookkeeping, kept out of `ReviewManager` so it can be tested without
+/// involving StoreKit.
+enum ReviewPromptPolicy {
+    private static let lastVersionKey = "review.lastVersionPrompted"
+
+    static func appVersion(_ bundle: Bundle = .main) -> String {
+        bundle.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0"
+    }
+
+    static func hasAskedThisVersion(defaults: UserDefaults = .standard,
+                                    version: String = appVersion()) -> Bool {
+        defaults.string(forKey: lastVersionKey) == version
+    }
+
+    /// Records that this version has asked. Returns false when it already had,
+    /// which is the caller's signal that asking again is pointless.
+    @discardableResult
+    static func markAsked(defaults: UserDefaults = .standard,
+                          version: String = appVersion()) -> Bool {
+        guard !hasAskedThisVersion(defaults: defaults, version: version) else { return false }
+        defaults.set(version, forKey: lastVersionKey)
+        return true
+    }
+}
+
 @MainActor
 final class ReviewManager: ObservableObject {
     static let shared = ReviewManager()
 
     private init() {}
 
-    /// Asks iOS for the native prompt. Safe to call after any genuine success —
-    /// the system does the throttling.
+    /// Asks regardless of whether this version already has — the Settings
+    /// button, where the user asked for it explicitly.
     func requestReview() {
         RatingService.requestNativeReview()
+        ReviewPromptPolicy.markAsked()
+    }
+
+    /// Asks only if this version hasn't already. Returns whether it asked.
+    @discardableResult
+    func requestReviewIfNotYetAsked() -> Bool {
+        guard ReviewPromptPolicy.markAsked() else { return false }
+        RatingService.requestNativeReview()
+        return true
     }
 }
 
@@ -31,18 +66,16 @@ final class ReviewManager: ObservableObject {
 /// same in both places, so it lives here rather than in either view.
 @MainActor
 enum FindWrapUp {
-    /// The review ask comes first and fires on every confirmed find: that is
-    /// the moment the app has just worked, and iOS throttles the prompt anyway.
-    ///
-    /// Two modals at once would be a mess, so the alerts subscription is only
-    /// offered when the review prompt is switched off. With `reviewPrompt` on —
-    /// the default — paywall #2 is reached from Settings instead.
+    /// The first confirmed find of each version asks for a review — that is the
+    /// moment the app has just worked. After that iOS will not show the prompt
+    /// again anyway, so the moment is handed to the alerts subscription
+    /// instead, subject to its own cooldown. One ask per find, never two.
     static func perform(container: DIContainer,
                         entitlements: Entitlements,
                         offerAlerts: () -> Void) {
-        if container.config.featureFlags.reviewPrompt {
+        if container.config.featureFlags.reviewPrompt,
+           ReviewManager.shared.requestReviewIfNotYetAsked() {
             container.analytics.track(AnalyticsEvent.reviewPrompted)
-            ReviewManager.shared.requestReview()
             return
         }
 
