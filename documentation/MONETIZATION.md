@@ -20,9 +20,9 @@ paying customers out of what they bought, silently.
 ## App Store Connect
 
 1. Create the in-app purchases:
-   - **Non-consumable**, e.g. `com.yourcompany.findmyheadphones.radar` at $9.99.
+   - **Non-consumable**, e.g. `com.sedostudio.findmyheadphones.radar` at $9.99.
    - **Auto-renewable subscription** in a new group, e.g.
-     `com.yourcompany.findmyheadphones.alerts.monthly` at $4.99/month.
+     `com.sedostudio.findmyheadphones.alerts.monthly` at $4.99/month.
 2. Fill in review notes explaining that the radar is a one-time unlock and the
    subscription is a separate, ongoing feature. Reviewers reject paywalls whose
    terms are unclear.

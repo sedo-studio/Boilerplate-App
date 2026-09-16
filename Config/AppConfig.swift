@@ -39,7 +39,7 @@ public extension AppConfig {
         AppConfig(
             appName: "Find My Headphones",
             // Must match PRODUCT_BUNDLE_IDENTIFIER in project.yml.
-            bundleId: "com.francisgane.findmyheadphones",
+            bundleId: "com.sedostudio.findmyheadphones",
             // Fill in once the app has an App Store listing — the review
             // prompt's fallback link needs it.
             appStoreId: "",
