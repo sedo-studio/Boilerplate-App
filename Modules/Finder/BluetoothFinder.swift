@@ -147,6 +147,19 @@ final class BluetoothFinder: NSObject, ObservableObject {
         state = .found(device)
     }
 
+    /// The hunt is over: stop the radios and show the wrap-up state.
+    func markRecovered() {
+        stopProximityTracking()
+        scanTimeout?.cancel()
+        scanTimeout = nil
+        central?.stopScan()
+        #if DEBUG
+        demoTask?.cancel()
+        demoTask = nil
+        #endif
+        state = .recovered
+    }
+
     func forgetDevice() {
         UserDefaults.standard.removeObject(forKey: savedIdKey)
         UserDefaults.standard.removeObject(forKey: savedNameKey)

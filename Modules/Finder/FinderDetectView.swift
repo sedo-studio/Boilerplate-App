@@ -19,7 +19,6 @@ struct FinderDetectView: View {
 
     @State private var showDevicePicker = false
     @State private var showAlertsPaywall = false
-    @State private var didRecover = false
     @State private var scanStartedAt: Date?
 
     var body: some View {
@@ -46,6 +45,13 @@ struct FinderDetectView: View {
             // On the transition, not on appear — coming back from the radar
             // shouldn't buzz again.
             if case .found = newState { playFoundHaptic() }
+            // The radar hands the hunt back here when it ends, so the wrap-up
+            // runs in one place wherever the user tapped "I've got them".
+            if case .recovered = newState {
+                FindWrapUp.perform(container: container, entitlements: entitlements) {
+                    showAlertsPaywall = true
+                }
+            }
         }
         .onDisappear { finder.stopScan() }
     }
@@ -60,20 +66,13 @@ struct FinderDetectView: View {
 
     @ViewBuilder
     private var statusArea: some View {
-        if didRecover {
+        switch finder.state {
+        case .recovered:
             FinderStatusCard(systemImage: "hands.clap",
                              tint: DS.success,
                              title: "finder.recovered.title",
                              message: "finder.recovered.body",
                              isAnimating: false)
-        } else {
-            scanStatusArea
-        }
-    }
-
-    @ViewBuilder
-    private var scanStatusArea: some View {
-        switch finder.state {
         case .idle:
             FinderStatusCard(systemImage: "airpodspro",
                              tint: DS.accent,
@@ -120,20 +119,14 @@ struct FinderDetectView: View {
 
     @ViewBuilder
     private var actionArea: some View {
-        if didRecover {
-            Button(action: startScan) {
-                Label("finder.scan.again", systemImage: "magnifyingglass")
-            }
-            .buttonStyle(DSSecondaryButtonStyle())
-        } else {
-            scanActionArea
-        }
-    }
-
-    @ViewBuilder
-    private var scanActionArea: some View {
         VStack(spacing: DS.Spacing.md) {
             switch finder.state {
+            case .recovered:
+                Button(action: startScan) {
+                    Label("finder.scan.again", systemImage: "magnifyingglass")
+                }
+                .buttonStyle(DSSecondaryButtonStyle())
+
             case .idle, .notFound:
                 Button(action: startScan) {
                     Label("finder.scan.cta", systemImage: "magnifyingglass")
@@ -171,7 +164,6 @@ struct FinderDetectView: View {
     // MARK: - Intent
 
     private func startScan() {
-        didRecover = false
         scanStartedAt = Date()
         container.analytics.track(AnalyticsEvent.scanStarted)
         finder.startScan()
@@ -189,17 +181,7 @@ struct FinderDetectView: View {
             properties[AnalyticsProperty.durationSeconds] = String(Int(Date().timeIntervalSince(scanStartedAt)))
         }
         container.analytics.track(AnalyticsEvent.findSucceeded, properties: properties)
-        finder.stopScan()
-        didRecover = true
-
-        // One ask per find: the subscription offer, or the review prompt.
-        let offersAlerts = container.config.featureFlags.leftBehindAlerts
-            && LeftBehindPromptPolicy.registerFindAndShouldPrompt(isSubscribed: entitlements.hasLeftBehindAlerts)
-        if offersAlerts {
-            showAlertsPaywall = true
-        } else if container.config.featureFlags.reviewPrompt {
-            ReviewManager.shared.registerSignificantEvent()
-        }
+        finder.markRecovered()   // the state change runs the wrap-up above
     }
 
     private func openSystemSettings() {

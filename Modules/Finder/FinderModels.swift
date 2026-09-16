@@ -236,4 +236,8 @@ enum FinderState: Equatable {
     case scanning
     case found(DiscoveredDevice)
     case notFound
+    /// The user confirmed they physically have the headphones. Lives here
+    /// rather than in a view's local state because both the finder and the
+    /// radar can end a hunt, and the radar hands back to the finder.
+    case recovered
 }

@@ -167,7 +167,7 @@ struct SettingsView: View {
     private var aboutSection: some View {
         Section {
             if flags.reviewPrompt {
-                Button { ReviewManager.shared.requestNativeReviewNow() } label: {
+                Button { ReviewManager.shared.requestReview() } label: {
                     Label("settings.rate", systemImage: "star")
                 }
             }

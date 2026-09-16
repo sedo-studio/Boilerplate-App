@@ -1,13 +1,12 @@
 //
 //  ReviewManager.swift
 //
-//  PRO feature — App Store review prompt.
-//  Counts "significant events" and asks for a review at the right moment
-//  (Apple's native prompt is itself rate-limited by the system).
+//  App Store review prompt.
 //
-//  Self-contained: delete the `Modules/Review` folder, remove the
-//  `requestNativeReview()` helper from `RatingService.swift`, and flip
-//  `featureFlags.reviewPrompt` off to remove this feature entirely.
+//  Note on "showing" a review prompt: `SKStoreReviewController` is a request,
+//  not a command. iOS decides whether the sheet actually appears and caps it at
+//  roughly three times a year per user, silently ignoring the rest. So the app
+//  can ask at exactly the right moment, but it cannot make the prompt appear.
 //
 
 import Foundation
@@ -17,52 +16,39 @@ import SwiftUI
 final class ReviewManager: ObservableObject {
     static let shared = ReviewManager()
 
-    /// Number of significant events before we ask for a review.
-    let threshold: Int
+    private init() {}
 
-    private let eventCountKey = "review.significantEvents"
-    private let lastVersionKey = "review.lastVersionPrompted"
-    private let defaults: UserDefaults
-
-    init(threshold: Int = 3, defaults: UserDefaults = .standard) {
-        self.threshold = threshold
-        self.defaults = defaults
+    /// Asks iOS for the native prompt. Safe to call after any genuine success —
+    /// the system does the throttling.
+    func requestReview() {
+        RatingService.requestNativeReview()
     }
+}
 
-    /// Current progress toward the next prompt (for display/testing).
-    var significantEvents: Int { defaults.integer(forKey: eventCountKey) }
-
-    /// Call this after a meaningful action (e.g. the user finished a core task).
-    /// When the threshold is reached, the native review prompt is requested.
-    func registerSignificantEvent() {
-        let count = defaults.integer(forKey: eventCountKey) + 1
-        defaults.set(count, forKey: eventCountKey)
-        if count >= threshold {
-            requestReviewIfAppropriate()
+/// What happens the moment someone confirms they have their headphones back.
+///
+/// Both the finder and the radar can end a hunt, and the rule has to be the
+/// same in both places, so it lives here rather than in either view.
+@MainActor
+enum FindWrapUp {
+    /// The review ask comes first and fires on every confirmed find: that is
+    /// the moment the app has just worked, and iOS throttles the prompt anyway.
+    ///
+    /// Two modals at once would be a mess, so the alerts subscription is only
+    /// offered when the review prompt is switched off. With `reviewPrompt` on —
+    /// the default — paywall #2 is reached from Settings instead.
+    static func perform(container: DIContainer,
+                        entitlements: Entitlements,
+                        offerAlerts: () -> Void) {
+        if container.config.featureFlags.reviewPrompt {
+            container.analytics.track(AnalyticsEvent.reviewPrompted)
+            ReviewManager.shared.requestReview()
+            return
         }
-    }
 
-    /// Requests the native prompt at most once per app version.
-    func requestReviewIfAppropriate() {
-        let version = Self.appVersion
-        guard defaults.string(forKey: lastVersionKey) != version else { return }
-        RatingService.requestNativeReview()
-        defaults.set(version, forKey: lastVersionKey)
-        defaults.set(0, forKey: eventCountKey)
-    }
-
-    /// Forces the native prompt regardless of throttling (useful for the demo).
-    func requestNativeReviewNow() {
-        RatingService.requestNativeReview()
-    }
-
-    /// Resets the local counters (useful for the demo / QA).
-    func reset() {
-        defaults.set(0, forKey: eventCountKey)
-        defaults.removeObject(forKey: lastVersionKey)
-    }
-
-    static var appVersion: String {
-        (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "1.0"
+        guard container.config.featureFlags.leftBehindAlerts,
+              LeftBehindPromptPolicy.registerFindAndShouldPrompt(isSubscribed: entitlements.hasLeftBehindAlerts)
+        else { return }
+        offerAlerts()
     }
 }

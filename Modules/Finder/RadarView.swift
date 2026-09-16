@@ -25,7 +25,6 @@ struct RadarView: View {
 
     @State private var pulse = false
     @State private var openedAt = Date()
-    @State private var showAlertsPaywall = false
     @State private var showRadarPaywall = false
     @State private var previewTimer: Task<Void, Never>?
     @State private var didStartLiveCountdown = false
@@ -131,7 +130,6 @@ struct RadarView: View {
         }
         .navigationTitle(Text("radar.title"))
         .navigationBarTitleDisplayMode(.inline)
-        .sheet(isPresented: $showAlertsPaywall) { LeftBehindPaywallView() }
         .sheet(isPresented: $showRadarPaywall, onDismiss: handleRadarPaywallDismiss) {
             // Only claim they watched it work if a real reading actually
             // arrived. On the timeout path they saw a dim, silent dial.
@@ -219,16 +217,11 @@ struct RadarView: View {
             AnalyticsProperty.proximity: finder.proximity.analyticsValue,
             AnalyticsProperty.durationSeconds: String(Int(Date().timeIntervalSince(openedAt)))
         ])
-        finder.stopProximityTracking()
-
-        // One ask per find: the subscription offer, or the review prompt.
-        let offersAlerts = container.config.featureFlags.leftBehindAlerts
-            && LeftBehindPromptPolicy.registerFindAndShouldPrompt(isSubscribed: entitlements.hasLeftBehindAlerts)
-        if offersAlerts {
-            showAlertsPaywall = true
-        } else if container.config.featureFlags.reviewPrompt {
-            ReviewManager.shared.registerSignificantEvent()
-        }
+        // Hand back to the finder, which shows the wrap-up and runs the
+        // review ask. Staying on a frozen dial was the bug: tapping the button
+        // stopped tracking and nothing else visibly happened.
+        finder.markRecovered()
+        router.pop()
     }
 }
 
