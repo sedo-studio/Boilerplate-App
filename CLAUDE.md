@@ -69,7 +69,10 @@ app from the over-promising competition.
    settings — is wiped on the next `xcodegen generate`. Change `project.yml`
    instead; that is where `DEVELOPMENT_TEAM` and the bundle id live.
 7. **`Config/Secrets.swift` is gitignored and generated.** Never commit it. The
-   committed template is `Config/Secrets.sample.swift`.
+   committed template is `Config/Secrets.sample.swift`. The same goes for
+   `Resources/Info.plist`, which XcodeGen writes from the `info:` block in
+   `project.yml` — tracking a generated file means every regeneration looks
+   like a local edit and blocks the next `git pull`.
 8. **There are no `__PLACEHOLDER__` tokens.** App identity is fixed in
    `AppConfig.swift`, the palette in `DesignSystem.swift`, signing and bundle
    id in `project.yml`. `setup.sh` only writes `Secrets.swift` — it never
