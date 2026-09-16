@@ -116,6 +116,14 @@ struct RadarView: View {
                         .appFont(.caption)
                         .foregroundStyle(DS.Colors.textTertiary)
                         .multilineTextAlignment(.center)
+
+                    #if DEBUG
+                    // "No signal" has several different causes; this says which.
+                    Text(verbatim: "\(finder.trackedDevice?.name.isEmpty == false ? finder.trackedDevice!.name : "(unnamed)") · \(finder.diagnostics)")
+                        .font(.system(size: 10, design: .monospaced))
+                        .foregroundStyle(DS.Colors.textTertiary)
+                        .multilineTextAlignment(.center)
+                    #endif
                 }
                 .padding(.horizontal, DS.Spacing.lg)
                 .padding(.bottom, DS.Spacing.lg)

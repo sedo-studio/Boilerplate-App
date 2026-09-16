@@ -53,6 +53,9 @@ final class BluetoothFinder: NSObject, ObservableObject {
     private let proximityTimeoutSeconds: TimeInterval = 12
 
     #if DEBUG
+    /// Last reading and where it came from — surfaced on the radar in debug
+    /// builds, because "no signal" has several very different causes.
+    @Published private(set) var diagnostics: String = "no readings yet"
     @Published private(set) var isDemoMode: Bool = false
     fileprivate var demoTask: Task<Void, Never>?
     #endif
@@ -221,6 +224,10 @@ final class BluetoothFinder: NSObject, ObservableObject {
 
     private func finishScanWindow() {
         guard case .scanning = state else { return }
+        #if DEBUG
+        let seen = candidates.map { "\($0.name.isEmpty ? "(unnamed)" : $0.name)\($0.isConnected ? " [connected]" : "") \($0.rssi.map { "\($0)dBm" } ?? "no rssi")" }
+        AppLogger.log("[Finder] Scan saw \(candidates.count): \(seen.joined(separator: ", "))", level: .debug)
+        #endif
         if let best = bestCandidate() {
             confirmFound(best)
         } else {
@@ -361,7 +368,7 @@ final class BluetoothFinder: NSObject, ObservableObject {
 
         guard device.id == trackedDevice?.id || device.id == savedDeviceId else { return }
         trackedDevice = device
-        if let rssi { ingestRSSI(rssi) }
+        if let rssi { ingestRSSI(rssi, source: .advertisement) }
     }
 
     /// Drops every reading taken so far, so a new scan never shows the last
@@ -373,8 +380,11 @@ final class BluetoothFinder: NSObject, ObservableObject {
         trend = .steady
     }
 
-    fileprivate func ingestRSSI(_ rssi: Int) {
+    fileprivate func ingestRSSI(_ rssi: Int, source: SignalSource = .advertisement) {
         smoother.add(rssi)
+        #if DEBUG
+        diagnostics = "\(source.rawValue) \(rssi)dBm · \(smoother.sampleCount) samples"
+        #endif
         guard let level = smoother.proximity else { return }
         hasLiveReading = true
         proximityUnavailable = false
@@ -440,7 +450,7 @@ extension BluetoothFinder {
                 // cool → warm ramp and back. One cycle takes about a minute —
                 // slow enough to read each proximity description before it
                 // changes, and a sine naturally lingers at both extremes.
-                self.ingestRSSI(Int(-68.0 + 24.0 * sin(tick)))
+                self.ingestRSSI(Int(-68.0 + 24.0 * sin(tick)), source: .demo)
                 tick += 0.05
                 try? await Task.sleep(nanoseconds: 500_000_000)
             }
@@ -591,7 +601,7 @@ extension BluetoothFinder: CBPeripheralDelegate {
         let reading = RSSI.intValue
         Task { @MainActor [weak self] in
             guard let self, identifier == self.trackedDevice?.id else { return }
-            self.ingestRSSI(reading)
+            self.ingestRSSI(reading, source: .connection)
         }
     }
 }

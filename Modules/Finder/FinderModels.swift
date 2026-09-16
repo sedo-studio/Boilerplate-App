@@ -117,6 +117,15 @@ enum ProximityLevel: Int, CaseIterable, Sendable, Comparable {
     }
 }
 
+/// Where a reading came from. The two paths behave very differently: a GATT
+/// connection keeps working when the device stops advertising, while
+/// advertisement readings need the device to still be broadcasting.
+enum SignalSource: String, Sendable {
+    case advertisement
+    case connection
+    case demo
+}
+
 /// Which way the signal is moving — the honest version of a compass arrow.
 enum ProximityTrend: Sendable, Equatable {
     case warmer
