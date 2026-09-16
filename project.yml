@@ -53,6 +53,11 @@ targets:
         # name and shows "FindMyHeadphones" run together. Matches the App
         # Store name; iOS truncates the tail on the home screen itself.
         CFBundleDisplayName: Headphone Finder
+        # The app's only network traffic is RevenueCat's and TelemetryDeck's
+        # HTTPS, which is exempt. Without this, App Store Connect asks the
+        # export-compliance question on every upload and holds the build
+        # until it is answered.
+        ITSAppUsesNonExemptEncryption: false
         CFBundleLocalizations:
           - en
     settings:
