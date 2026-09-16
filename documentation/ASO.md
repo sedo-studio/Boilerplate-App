@@ -21,8 +21,9 @@ for, not with Apple's verb.
   already used in the name or subtitle** — Apple indexes all three together, so
   a repeat is a wasted character.
 - **Home-screen name** is `CFBundleDisplayName` in `project.yml`, set to
-  "Headphones". It is deliberately shorter than the App Store name because home
-  screens truncate around twelve characters.
+  "Headphone Finder" to match the listing. Home screens truncate the tail at
+  roughly twelve characters, so it renders as "Headphone Fi…" — a deliberate
+  trade of the full label for a name that matches the App Store.
 - **Skip "nearpod"** — it is an unrelated education product and the traffic will
   never convert.
 

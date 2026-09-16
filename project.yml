@@ -50,10 +50,9 @@ targets:
         UIBackgroundModes:
           - bluetooth-central
         # The home-screen name. Without this iOS falls back to the product
-        # name and shows "FindMyHeadphones" run together. Home screens
-        # truncate around twelve characters, so this is shorter than the
-        # App Store name ("Headphone Finder").
-        CFBundleDisplayName: Headphones
+        # name and shows "FindMyHeadphones" run together. Matches the App
+        # Store name; iOS truncates the tail on the home screen itself.
+        CFBundleDisplayName: Headphone Finder
         CFBundleLocalizations:
           - en
     settings:
