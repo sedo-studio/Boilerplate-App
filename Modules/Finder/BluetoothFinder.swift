@@ -50,7 +50,14 @@ final class BluetoothFinder: NSObject, ObservableObject {
     private var scanTimeout: Task<Void, Never>?
     private var rssiPoll: Task<Void, Never>?
     private var proximityTimeout: Task<Void, Never>?
+    private var escalation: Task<Void, Never>?
+    private var connectWatchdog: Task<Void, Never>?
     private let proximityTimeoutSeconds: TimeInterval = 12
+    /// How long advertisements get to produce a reading before trying GATT.
+    private let escalationDelay: TimeInterval = 3
+    /// A connect that never completes leaves the peripheral invisible to the
+    /// scan, so it gets cancelled and the advertisement path resumes.
+    private let connectTimeout: TimeInterval = 5
 
     #if DEBUG
     /// Last reading and where it came from — surfaced on the radar in debug
@@ -278,18 +285,28 @@ final class BluetoothFinder: NSObject, ObservableObject {
                 withServices: nil,
                 options: [CBCentralManagerScanOptionAllowDuplicatesKey: true]
             )
-            // Connect even when the peripheral already reports `.connected`.
-            //
-            // `retrieveConnectedPeripherals` returns devices connected to the
-            // *system* — iOS is routing audio to them — but this app still has
-            // no link of its own, and `readRSSI()` on a peripheral we have not
-            // connected to ourselves returns nothing and calls back never.
-            // Connecting is near-instant in that case. Skipping it is why the
-            // radar sat on "Listening…" for headphones already playing audio,
-            // which is the most common way anyone opens this screen.
-            if let peripheral = resolvePeripheral(device.id) {
-                central.connect(peripheral, options: nil)
-            }
+        }
+
+        // Two ways to get a reading, and they are mutually exclusive:
+        //
+        //  • Advertisements, via the scan above. Non-invasive, and enough on
+        //    its own for most headphones.
+        //  • A GATT connection plus readRSSI. Needed for a device that has
+        //    stopped advertising — including one already connected to the
+        //    system for audio, where `readRSSI()` returns nothing until this
+        //    app holds a link of its own.
+        //
+        // Connecting stops the scan reporting that peripheral, so reaching for
+        // it while advertisements are already arriving throws away the very
+        // readings we want. Wait, and only escalate if nothing turns up.
+        escalation?.cancel()
+        let deviceID = device.id
+        let delay = escalationDelay
+        escalation = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            guard let self, !Task.isCancelled,
+                  self.isTrackingProximity, !self.hasLiveReading else { return }
+            self.escalateToConnection(deviceID)
         }
 
         // Some headphones are classic-Bluetooth only and will never produce a
@@ -325,6 +342,10 @@ final class BluetoothFinder: NSObject, ObservableObject {
         rssiPoll = nil
         proximityTimeout?.cancel()
         proximityTimeout = nil
+        escalation?.cancel()
+        escalation = nil
+        connectWatchdog?.cancel()
+        connectWatchdog = nil
         central?.stopScan()
         if let connectedPeripheral, connectedPeripheral.state == .connected, !wantsPersistentConnection {
             central?.cancelPeripheralConnection(connectedPeripheral)
@@ -339,6 +360,32 @@ final class BluetoothFinder: NSObject, ObservableObject {
         peripherals[id] = peripheral
         peripheral.delegate = self
         return peripheral
+    }
+
+    /// Advertisements produced nothing, so try for a GATT link — and give up
+    /// on it if it stalls, because a pending connect keeps the peripheral out
+    /// of the scan results too.
+    private func escalateToConnection(_ id: UUID) {
+        guard let central, central.state == .poweredOn,
+              let peripheral = resolvePeripheral(id) else { return }
+
+        AppLogger.log("[Finder] No advertisement readings — trying a GATT connection", level: .debug)
+        central.connect(peripheral, options: nil)
+
+        connectWatchdog?.cancel()
+        let timeout = connectTimeout
+        connectWatchdog = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
+            guard let self, !Task.isCancelled, self.isTrackingProximity else { return }
+            guard self.connectedPeripheral == nil else { return }
+
+            AppLogger.log("[Finder] Connect stalled — cancelling so the scan can see it again", level: .warning)
+            central.cancelPeripheralConnection(peripheral)
+            central.scanForPeripherals(
+                withServices: nil,
+                options: [CBCentralManagerScanOptionAllowDuplicatesKey: true]
+            )
+        }
     }
 
     private func pollConnectedRSSI() {
