@@ -93,6 +93,11 @@ xcodebuild -project FindMyHeadphones.xcodeproj -scheme FindMyHeadphones \
   -destination 'platform=iOS Simulator,name=iPhone 15' test
 ```
 
+- **Version and build number** live in `project.yml` only: `MARKETING_VERSION`
+  is what customers see, `CURRENT_PROJECT_VERSION` is the build number and must
+  increase for every upload. `Resources/Info.plist` is generated and takes both
+  through `$(...)` substitution — never type a literal version into it, or the
+  build settings become decoration and every archive uploads as the same build.
 - **Adding a `.swift` file:** XcodeGen globs whole folders (`Config`, `Core`,
   `Modules`, `Resources`). Drop the file in the right folder and run
   `xcodegen generate` — never hand-edit the `pbxproj`.
