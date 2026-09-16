@@ -28,6 +28,15 @@ struct DiscoveredDevice: Identifiable, Equatable, Sendable {
         self.isConnected = isConnected
     }
 
+    /// Whether there is actual evidence the device is within range.
+    ///
+    /// Knowing *about* a device is not the same as hearing it.
+    /// `retrievePeripherals(withIdentifiers:)` returns a peripheral for any
+    /// identifier CoreBluetooth remembers — switched off, flat, or three miles
+    /// away — so a reading or a live connection is the only evidence of
+    /// presence there is. Nothing else counts.
+    var isPresent: Bool { rssi != nil || isConnected }
+
     /// Measurable devices rank first, then strongest signal, then connected.
     ///
     /// Measurability beats connectedness on purpose. A device connected for
@@ -51,6 +60,26 @@ struct DiscoveredDevice: Identifiable, Equatable, Sendable {
 /// Apple's proximity-pairing advertisements is undocumented and fragile, so the
 /// free scan leans on names. Anything unmatched is still selectable by hand.
 enum HeadphoneHeuristic {
+    /// What a scan should report as found: the saved device when it is
+    /// actually present, otherwise the strongest present headphones.
+    ///
+    /// Everything here hinges on `isPresent`. Reporting "Found nearby" for a
+    /// device we have merely heard *of* is the over-promising this app exists
+    /// not to do, and it is the easiest mistake to make, because CoreBluetooth
+    /// will happily hand back a peripheral for headphones that are switched
+    /// off in another country.
+    static func bestMatch(in candidates: [DiscoveredDevice],
+                          savedId: UUID?) -> DiscoveredDevice? {
+        let present = candidates.filter(\.isPresent)
+        if let savedId, let saved = present.first(where: { $0.id == savedId }) {
+            return saved
+        }
+        return present
+            .filter { looksLikeHeadphones(name: $0.name) || $0.isConnected }
+            .sorted(by: DiscoveredDevice.strongestFirst)
+            .first
+    }
+
     static let nameFragments = [
         "airpod", "beats", "buds", "headphone", "headset", "earphone",
         "earbud", "pods", "wh-", "wf-", "quietcomfort", "bose", "soundcore",

@@ -229,3 +229,49 @@ final class ReviewPromptPolicyTests: XCTestCase {
         XCTAssertFalse(ReviewPromptPolicy.appVersion(Bundle(for: ReviewPromptPolicyTests.self)).isEmpty)
     }
 }
+
+final class PresenceTests: XCTestCase {
+    private let savedId = UUID()
+
+    func testKnownButUnheardDeviceIsNeverReportedAsFound() {
+        // What `retrievePeripherals(withIdentifiers:)` hands back for a saved
+        // device: a real peripheral object, no reading, no connection. The
+        // headphones may be switched off in another country.
+        let remembered = DiscoveredDevice(id: savedId, name: "Bose QC45", rssi: nil)
+
+        XCTAssertFalse(remembered.isPresent)
+        XCTAssertNil(HeadphoneHeuristic.bestMatch(in: [remembered], savedId: savedId),
+                     "Knowing about a device is not hearing it — this is the whole honesty rule.")
+    }
+
+    func testSavedDeviceWinsOnceItIsActuallyHeard() {
+        let remembered = DiscoveredDevice(id: savedId, name: "Bose QC45", rssi: -70)
+        let louderStranger = DiscoveredDevice(id: UUID(), name: "Sony WH-1000XM5", rssi: -40)
+
+        XCTAssertEqual(HeadphoneHeuristic.bestMatch(in: [louderStranger, remembered], savedId: savedId)?.id,
+                       savedId,
+                       "The device the user chose beats a stronger stranger.")
+    }
+
+    func testFallsBackToTheStrongestHeardHeadphonesWhenTheSavedOneIsAbsent() {
+        let absent = DiscoveredDevice(id: savedId, name: "Bose QC45", rssi: nil)
+        let near = DiscoveredDevice(id: UUID(), name: "Sony WH-1000XM5", rssi: -44)
+        let far = DiscoveredDevice(id: UUID(), name: "JBL Tune", rssi: -88)
+
+        XCTAssertEqual(HeadphoneHeuristic.bestMatch(in: [absent, far, near], savedId: savedId)?.rssi, -44)
+    }
+
+    func testConnectedCountsAsPresentWithoutAReading() {
+        // Connected for audio means certainly nearby, even with no RSSI —
+        // that is the fast path to "found nearby".
+        let connected = DiscoveredDevice(id: UUID(), name: "AirPods Pro", rssi: nil, isConnected: true)
+
+        XCTAssertTrue(connected.isPresent)
+        XCTAssertEqual(HeadphoneHeuristic.bestMatch(in: [connected], savedId: nil)?.id, connected.id)
+    }
+
+    func testNonHeadphoneStrangersAreIgnored() {
+        let speaker = DiscoveredDevice(id: UUID(), name: "Kitchen Thermometer", rssi: -30)
+        XCTAssertNil(HeadphoneHeuristic.bestMatch(in: [speaker], savedId: nil))
+    }
+}

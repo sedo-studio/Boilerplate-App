@@ -267,13 +267,11 @@ final class BluetoothFinder: NSObject, ObservableObject {
         }
     }
 
-    /// The saved device if it is in range, otherwise the strongest peripheral
-    /// that looks like headphones.
+    /// The saved device if we can actually hear it, otherwise the strongest
+    /// peripheral that looks like headphones. Pure logic, so it is tested in
+    /// `FinderLogicTests` rather than needing a device.
     private func bestCandidate() -> DiscoveredDevice? {
-        if let savedDeviceId, let saved = candidates.first(where: { $0.id == savedDeviceId }) {
-            return saved
-        }
-        return headphoneCandidates.sorted(by: DiscoveredDevice.strongestFirst).first
+        HeadphoneHeuristic.bestMatch(in: candidates, savedId: savedDeviceId)
     }
 
     private func confirmFound(_ device: DiscoveredDevice) {
