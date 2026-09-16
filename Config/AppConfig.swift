@@ -46,11 +46,12 @@ public extension AppConfig {
             // prompt's fallback link needs it.
             appStoreId: "6812735564",
             featureFlags: FeatureFlags(onboarding: true, radarUnlock: true, leftBehindAlerts: true, reviewPrompt: true),
-            // TODO: replace both before submitting. Apple rejects placeholder
-            // legal links, and the paywalls link to them.
+            // Both must stay publicly reachable without a login — Apple
+            // checks the privacy URL at review, and Settings and the paywalls
+            // link to them.
             legal: LegalLinks(
-                privacyPolicyURL: URL(string: "https://example.com/privacy")!,
-                termsURL: URL(string: "https://example.com/terms")!
+                privacyPolicyURL: URL(string: "https://sedo-studio.com/headphone-finder/privacy")!,
+                termsURL: URL(string: "https://sedo-studio.com/headphone-finder/terms")!
             )
         )
     }
