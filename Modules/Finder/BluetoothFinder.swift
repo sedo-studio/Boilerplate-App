@@ -70,6 +70,9 @@ final class BluetoothFinder: NSObject, ObservableObject {
     private let savedIdKey = "finder.device.id"
     private let savedNameKey = "finder.device.name"
     private let scanWindow: TimeInterval = 15
+    /// When the current scan began, so an early answer can be timed.
+    private var scanStartedAt: Date?
+
     /// GATT services commonly exposed by connected audio accessories, used to
     /// find peripherals already connected to this iPhone.
     private let connectedServices = [CBUUID(string: "180F"), CBUUID(string: "180A")]
@@ -202,6 +205,7 @@ final class BluetoothFinder: NSObject, ObservableObject {
         }
 
         state = .scanning
+        scanStartedAt = Date()
 
         // A device already connected for audio never appears in a scan, so
         // check that list first. It is also the fastest path to the free
@@ -272,6 +276,23 @@ final class BluetoothFinder: NSObject, ObservableObject {
     /// `FinderLogicTests` rather than needing a device.
     private func bestCandidate() -> DiscoveredDevice? {
         HeadphoneHeuristic.bestMatch(in: candidates, savedId: savedDeviceId)
+    }
+
+    /// Ends the scan as soon as the answer is already obvious, instead of
+    /// making the user watch out a window that has nothing left to tell them.
+    /// The rule itself is pure and lives in `HeadphoneHeuristic`; the scan
+    /// keeps running either way.
+    private func considerEarlyConfirm() {
+        guard case .scanning = state,
+              let best = bestCandidate(),
+              let started = scanStartedAt,
+              HeadphoneHeuristic.canConfirmEarly(best,
+                                                 savedId: savedDeviceId,
+                                                 savedName: savedDeviceName,
+                                                 elapsed: Date().timeIntervalSince(started))
+        else { return }
+
+        confirmFound(best)
     }
 
     private func confirmFound(_ device: DiscoveredDevice) {
@@ -434,6 +455,7 @@ final class BluetoothFinder: NSObject, ObservableObject {
             candidates.append(device)
         }
         candidates.sort(by: DiscoveredDevice.strongestFirst)
+        considerEarlyConfirm()
 
         guard isTrackedDevice(device) else { return }
 

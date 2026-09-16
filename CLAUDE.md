@@ -273,6 +273,19 @@ This is the part worth understanding properly.
   signal. `HeadphoneHeuristic.isSameDevice` matches them by name, and
   `strongestFirst` ranks a measurable device above a connected-but-silent one.
   Ranking connectedness first is what made the radar sit on "Listening…".
+- **Presence has to be evidenced.** `retrievePeripherals(withIdentifiers:)` is
+  a lookup, not a proximity check — CoreBluetooth returns a peripheral for any
+  identifier it remembers, switched off or three miles away. Only a reading or
+  a live connection counts (`DiscoveredDevice.isPresent`), and
+  `HeadphoneHeuristic.bestMatch` enforces it. Saying "Found nearby" for a
+  device we have merely heard *of* is the over-promising this app exists not to
+  do.
+- **The scan ends as soon as the answer is obvious.** The 15-second window is a
+  fallback for a weak or crowded field, not a ceremony:
+  `HeadphoneHeuristic.canConfirmEarly` confirms the remembered device on its
+  first reading, and a strong unknown pair after a short settle. The free
+  "found nearby" moment is what earns the paid radar, so it should arrive in a
+  second, not fifteen.
 - `rssi` on `DiscoveredDevice` is **optional on purpose**. A device we know
   about but have not measured has `nil` — never a stand-in number. Do not
   "fix" this by defaulting it.

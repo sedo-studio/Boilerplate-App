@@ -80,6 +80,38 @@ enum HeadphoneHeuristic {
             .first
     }
 
+    /// Advertisements are gathered for this long before a device we were never
+    /// told about is allowed to end the scan early.
+    static let earlySettle: TimeInterval = 2.5
+    /// Strong enough to be in this room rather than through a wall.
+    static let earlyRSSI = -70
+
+    /// Whether a candidate is a good enough answer to stop waiting out the
+    /// scan window and tell the user now.
+    ///
+    /// The window exists to let a weak or crowded field settle. Sitting
+    /// through it while the user's own headphones shout from the next cushion
+    /// spends fifteen seconds to say what was known in one — and this free
+    /// moment is what has to earn the paid radar.
+    static func canConfirmEarly(_ device: DiscoveredDevice,
+                                savedId: UUID?,
+                                savedName: String?,
+                                elapsed: TimeInterval) -> Bool {
+        guard let rssi = device.rssi else { return false }
+
+        // The remembered device is unambiguous: the user already told us this
+        // is the one, so any reading from it is enough. Matched by name as
+        // well as id, because the handle that reports a signal is often not
+        // the handle that was saved.
+        if device.id == savedId || isSameDevice(device.name, savedName ?? "") { return true }
+
+        // Anything else has to be both strong and given a moment for the rest
+        // of the room to speak up.
+        return elapsed >= earlySettle
+            && rssi >= earlyRSSI
+            && looksLikeHeadphones(name: device.name)
+    }
+
     static let nameFragments = [
         "airpod", "beats", "buds", "headphone", "headset", "earphone",
         "earbud", "pods", "wh-", "wf-", "quietcomfort", "bose", "soundcore",

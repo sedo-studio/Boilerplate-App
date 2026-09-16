@@ -278,3 +278,60 @@ final class PresenceTests: XCTestCase {
         XCTAssertNil(HeadphoneHeuristic.bestMatch(in: [speaker], savedId: nil))
     }
 }
+
+final class EarlyConfirmTests: XCTestCase {
+    private let savedId = UUID()
+
+    func testRememberedDeviceEndsTheScanImmediately() {
+        let saved = DiscoveredDevice(id: savedId, name: "Bose QC45", rssi: -80)
+
+        XCTAssertTrue(HeadphoneHeuristic.canConfirmEarly(saved,
+                                                         savedId: savedId,
+                                                         savedName: "Bose QC45",
+                                                         elapsed: 0.2),
+                      "The user already told us this is the one — no need to wait, or to be loud.")
+    }
+
+    func testRememberedDeviceIsMatchedByNameWhenTheHandleDiffers() {
+        // The advertiser that reports a signal is a different peripheral from
+        // the handle that was saved.
+        let advertiser = DiscoveredDevice(id: UUID(), name: "LE-Bose QC45", rssi: -75)
+
+        XCTAssertTrue(HeadphoneHeuristic.canConfirmEarly(advertiser,
+                                                         savedId: savedId,
+                                                         savedName: "Bose QC45",
+                                                         elapsed: 0.2))
+    }
+
+    func testAStrangerMustWaitForTheFieldToSettle() {
+        let loud = DiscoveredDevice(id: UUID(), name: "Sony WH-1000XM5", rssi: -45)
+
+        XCTAssertFalse(HeadphoneHeuristic.canConfirmEarly(loud, savedId: nil, savedName: nil, elapsed: 1.0),
+                       "Naming the first thing heard risks missing something better a second behind it.")
+        XCTAssertTrue(HeadphoneHeuristic.canConfirmEarly(loud, savedId: nil, savedName: nil, elapsed: 3.0))
+    }
+
+    func testAFaintStrangerWaitsOutTheWholeWindow() {
+        let faint = DiscoveredDevice(id: UUID(), name: "Sony WH-1000XM5", rssi: -85)
+        XCTAssertFalse(HeadphoneHeuristic.canConfirmEarly(faint, savedId: nil, savedName: nil, elapsed: 10))
+    }
+
+    func testNonHeadphonesNeverEndTheScanEarly() {
+        let speaker = DiscoveredDevice(id: UUID(), name: "Hue white lamp", rssi: -40)
+        XCTAssertFalse(HeadphoneHeuristic.canConfirmEarly(speaker, savedId: nil, savedName: nil, elapsed: 10))
+    }
+
+    func testAnUnheardDeviceNeverQualifies() {
+        let unheard = DiscoveredDevice(id: savedId, name: "Bose QC45", rssi: nil)
+        XCTAssertFalse(HeadphoneHeuristic.canConfirmEarly(unheard,
+                                                          savedId: savedId,
+                                                          savedName: "Bose QC45",
+                                                          elapsed: 10),
+                       "Presence still has to be evidenced, even for the saved device.")
+    }
+
+    func testAnUnnamedDeviceDoesNotMatchAnEmptySavedName() {
+        let unnamed = DiscoveredDevice(id: UUID(), name: "", rssi: -40)
+        XCTAssertFalse(HeadphoneHeuristic.canConfirmEarly(unnamed, savedId: nil, savedName: nil, elapsed: 10))
+    }
+}
