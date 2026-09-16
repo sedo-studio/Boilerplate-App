@@ -16,3 +16,7 @@ build/
 
 # setup.sh backups
 .setup-backup-*/
+
+# Python bytecode from scripts/
+__pycache__/
+*.pyc
