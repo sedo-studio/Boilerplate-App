@@ -37,12 +37,14 @@ public struct AppConfig: Codable, Sendable {
 public extension AppConfig {
     static var `default`: AppConfig {
         AppConfig(
-            appName: "Find My Headphones",
+            // The App Store listing name. The bundle id predates it and does
+            // not have to match — it is never shown to anyone.
+            appName: "Headphone Finder",
             // Must match PRODUCT_BUNDLE_IDENTIFIER in project.yml.
             bundleId: "com.sedostudio.findmyheadphones",
-            // Fill in once the app has an App Store listing — the review
+            // App Store Connect's id for the listing, from its URL. The review
             // prompt's fallback link needs it.
-            appStoreId: "",
+            appStoreId: "6812735564",
             featureFlags: FeatureFlags(onboarding: true, radarUnlock: true, leftBehindAlerts: true, reviewPrompt: true),
             // TODO: replace both before submitting. Apple rejects placeholder
             // legal links, and the paywalls link to them.

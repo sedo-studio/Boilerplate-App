@@ -49,6 +49,11 @@ targets:
         # powers "left behind" alerts (Modules/LeftBehind).
         UIBackgroundModes:
           - bluetooth-central
+        # The home-screen name. Without this iOS falls back to the product
+        # name and shows "FindMyHeadphones" run together. Home screens
+        # truncate around twelve characters, so this is shorter than the
+        # App Store name ("Headphone Finder").
+        CFBundleDisplayName: Headphones
         CFBundleLocalizations:
           - en
     settings:

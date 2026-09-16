@@ -6,13 +6,23 @@
 using it in your title invites rejection and a dispute you cannot win. The
 established apps in this category mostly avoid it in their titles too.
 
-- **Name:** "Find My Headphones" (or a close variant that reads naturally).
-- **Subtitle:** describe the mechanism without the trademark, e.g.
-  *"Bluetooth finder for lost earbuds"*.
-- **Keywords field** (100 characters, hidden from users) is where the search
-  intent goes: `airpods,find my headphones,lost airpods,earbuds,bluetooth
-  finder,headphone tracker,lost earbuds`. Comma-separated, no spaces after
-  commas, no repeats of words already in the name or subtitle.
+**"Find My" is also Apple's trademark**, and "Find My Headphones" was taken on
+the App Store anyway. Both point the same way: lead with the noun people search
+for, not with Apple's verb.
+
+- **Name:** **Headphone Finder** (registered, App Store id `6812735564`). An
+  exact match for the highest-intent generic search in the category.
+- **Subtitle:** a separate 30 characters, indexed alongside the name. Spend it
+  on words the name does not already have, e.g.
+  *"Find lost earbuds by signal"*.
+- **Keywords field** (100 characters, hidden from users) is where the trademark
+  goes, never the name: `airpods,lost,bluetooth,locate,tracker,buds,missing,
+  pods,signal,nearby`. Comma-separated, no spaces after commas, and **no word
+  already used in the name or subtitle** — Apple indexes all three together, so
+  a repeat is a wasted character.
+- **Home-screen name** is `CFBundleDisplayName` in `project.yml`, set to
+  "Headphones". It is deliberately shorter than the App Store name because home
+  screens truncate around twelve characters.
 - **Skip "nearpod"** — it is an unrelated education product and the traffic will
   never convert.
 
