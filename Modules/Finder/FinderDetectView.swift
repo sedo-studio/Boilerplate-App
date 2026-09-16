@@ -386,16 +386,47 @@ private struct DevicePickerView: View {
     @ObservedObject var finder: BluetoothFinder
     @Environment(\.dismiss) private var dismiss
 
+    /// Row order, fixed when the sheet opens.
+    ///
+    /// `allNamedCandidates` ranks by signal strength, and the scan running
+    /// behind this sheet delivers new readings several times a second — so
+    /// ranking live shuffles rows out from under the user's finger mid-tap.
+    /// The ranking is worth having when the list is built and worthless
+    /// afterwards, so it is taken once and then held. Devices discovered
+    /// later join the bottom rather than pushing anything aside.
+    ///
+    /// Keyed by name, not by id, because `allNamedCandidates` de-duplicates by
+    /// name and can swap which handle it returns for one pair of headphones —
+    /// the LE advertiser or the connected link — as their signals change. An
+    /// id-keyed order would read that swap as a new device and send the row to
+    /// the bottom.
+    @State private var order: [String] = []
+
+    private var devices: [DiscoveredDevice] {
+        let live = finder.allNamedCandidates
+        let settled = order.compactMap { name in
+            live.first(where: { HeadphoneHeuristic.normalisedName($0.name) == name })
+        }
+        let newcomers = live.filter { device in
+            !order.contains(HeadphoneHeuristic.normalisedName(device.name))
+        }
+        return settled + newcomers
+    }
+
+    private var liveOrder: [String] {
+        finder.allNamedCandidates.map { HeadphoneHeuristic.normalisedName($0.name) }
+    }
+
     var body: some View {
         NavigationStack {
             List {
                 Section {
-                    if finder.allNamedCandidates.isEmpty {
+                    if devices.isEmpty {
                         Text("finder.picker.empty")
                             .appFont(.footnote)
                             .foregroundStyle(DS.Colors.textSecondary)
                     }
-                    ForEach(finder.allNamedCandidates) { device in
+                    ForEach(devices) { device in
                         Button {
                             finder.select(device)
                             dismiss()
@@ -425,6 +456,11 @@ private struct DevicePickerView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("generic.done") { dismiss() }
                 }
+            }
+            .onAppear { order = liveOrder }
+            .onChange(of: liveOrder) { names in
+                // Only ever append. Anything already on screen stays put.
+                for name in names where !order.contains(name) { order.append(name) }
             }
         }
     }
