@@ -74,8 +74,13 @@ If the SDK is unlinked or the key is empty, `LocalPurchasesService` takes over:
    automatically on dismiss.
 3. Confirm a find. The first find of each app version spends the moment on the
    review prompt instead (`FindWrapUp`), so confirm a second find to see the
-   alerts soft prompt — and `LeftBehindPromptPolicy` still wants two finds and
-   applies a 14-day cooldown after a decline.
+   alerts soft prompt. `LeftBehindPromptPolicy` counts only the finds that
+   reach it, so its minimum of one lands the offer on the user's second find;
+   a decline then starts a 14-day cooldown.
+
+   Note that the review prompt cannot be seen in a TestFlight build at all —
+   `SKStoreReviewController` does nothing there — so the sequence only plays
+   out fully in a debug build or in production.
 4. Settings → restore purchases → both entitlements come back.
 5. Let the subscription lapse in a sandbox account → alerts stop arming on the
    next foreground, without the user doing anything.

@@ -182,8 +182,10 @@ final class LeftBehindPromptPolicyTests: XCTestCase {
         defaults.removePersistentDomain(forName: "LeftBehindPromptPolicyTests")
     }
 
-    func testStaysQuietUntilTheAppHasProvedItself() {
-        XCTAssertFalse(LeftBehindPromptPolicy.registerFindAndShouldPrompt(isSubscribed: false, defaults: defaults))
+    func testOffersOnTheFirstFindThisPathSees() {
+        // Not the user's first find overall: the review prompt takes that one
+        // and returns before the counter is ever touched. By the time a find
+        // reaches here the app has already worked twice.
         XCTAssertTrue(LeftBehindPromptPolicy.registerFindAndShouldPrompt(isSubscribed: false, defaults: defaults))
     }
 
@@ -194,10 +196,11 @@ final class LeftBehindPromptPolicyTests: XCTestCase {
     }
 
     func testRespectsCooldownAfterAnOffer() {
-        _ = LeftBehindPromptPolicy.registerFindAndShouldPrompt(isSubscribed: false, defaults: defaults)
         XCTAssertTrue(LeftBehindPromptPolicy.registerFindAndShouldPrompt(isSubscribed: false, defaults: defaults))
         XCTAssertFalse(LeftBehindPromptPolicy.registerFindAndShouldPrompt(isSubscribed: false, defaults: defaults),
                        "A declined offer should not come back on the very next find.")
+        XCTAssertFalse(LeftBehindPromptPolicy.registerFindAndShouldPrompt(isSubscribed: false, defaults: defaults),
+                       "Nor the one after that — the cooldown is fourteen days.")
     }
 }
 
