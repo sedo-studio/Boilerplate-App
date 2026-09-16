@@ -32,6 +32,10 @@ final class BluetoothFinder: NSObject, ObservableObject {
     /// True once a real reading has arrived, so the radar can show a warm-up
     /// state instead of pretending to know something.
     @Published private(set) var hasLiveReading: Bool = false
+    /// Tracking has been running a while with nothing to show for it — usually
+    /// headphones that only speak classic Bluetooth, which no iPhone app can
+    /// measure.
+    @Published private(set) var proximityUnavailable: Bool = false
 
     /// Set by `LeftBehindMonitor` when it needs the GATT link kept alive so iOS
     /// can wake the app on connect/disconnect.
@@ -45,6 +49,8 @@ final class BluetoothFinder: NSObject, ObservableObject {
     private var smoother = RSSISmoother()
     private var scanTimeout: Task<Void, Never>?
     private var rssiPoll: Task<Void, Never>?
+    private var proximityTimeout: Task<Void, Never>?
+    private let proximityTimeoutSeconds: TimeInterval = 12
 
     #if DEBUG
     @Published private(set) var isDemoMode: Bool = false
@@ -265,16 +271,29 @@ final class BluetoothFinder: NSObject, ObservableObject {
                 withServices: nil,
                 options: [CBCentralManagerScanOptionAllowDuplicatesKey: true]
             )
-            // A GATT connection gives us readRSSI, which keeps working when the
-            // device stops advertising. The peripheral may not be cached yet if
-            // the radar was opened straight after a cold launch.
+            // Connect even when the peripheral already reports `.connected`.
+            //
+            // `retrieveConnectedPeripherals` returns devices connected to the
+            // *system* — iOS is routing audio to them — but this app still has
+            // no link of its own, and `readRSSI()` on a peripheral we have not
+            // connected to ourselves returns nothing and calls back never.
+            // Connecting is near-instant in that case. Skipping it is why the
+            // radar sat on "Listening…" for headphones already playing audio,
+            // which is the most common way anyone opens this screen.
             if let peripheral = resolvePeripheral(device.id) {
-                switch peripheral.state {
-                case .disconnected: central.connect(peripheral, options: nil)
-                case .connected:    connectedPeripheral = peripheral
-                default:            break
-                }
+                central.connect(peripheral, options: nil)
             }
+        }
+
+        // Some headphones are classic-Bluetooth only and will never produce a
+        // reading. Say so rather than leaving the dial warming up forever.
+        proximityUnavailable = false
+        proximityTimeout?.cancel()
+        let timeout = proximityTimeoutSeconds
+        proximityTimeout = Task { [weak self] in
+            try? await Task.sleep(nanoseconds: UInt64(timeout * 1_000_000_000))
+            guard let self, !Task.isCancelled, self.isTrackingProximity else { return }
+            if !self.hasLiveReading { self.proximityUnavailable = true }
         }
 
         rssiPoll?.cancel()
@@ -297,6 +316,8 @@ final class BluetoothFinder: NSObject, ObservableObject {
         isTrackingProximity = false
         rssiPoll?.cancel()
         rssiPoll = nil
+        proximityTimeout?.cancel()
+        proximityTimeout = nil
         central?.stopScan()
         if let connectedPeripheral, connectedPeripheral.state == .connected, !wantsPersistentConnection {
             central?.cancelPeripheralConnection(connectedPeripheral)
@@ -356,6 +377,9 @@ final class BluetoothFinder: NSObject, ObservableObject {
         smoother.add(rssi)
         guard let level = smoother.proximity else { return }
         hasLiveReading = true
+        proximityUnavailable = false
+        proximityTimeout?.cancel()
+        proximityTimeout = nil
         proximity = level
         trend = smoother.trend
     }
@@ -463,9 +487,11 @@ extension BluetoothFinder: CBCentralManagerDelegate {
     nonisolated func centralManager(_ central: CBCentralManager,
                                     didFailToConnect peripheral: CBPeripheral,
                                     error: Error?) {
+        let reason = error?.localizedDescription ?? "unknown"
         Task { @MainActor [weak self] in
             // Advertisement RSSI still feeds the radar, so a failed GATT
             // connection is not fatal.
+            AppLogger.log("[Finder] Connect failed: \(reason)", level: .warning)
             self?.clearConnection(for: peripheral.identifier)
         }
     }
@@ -507,6 +533,7 @@ extension BluetoothFinder: CBCentralManagerDelegate {
         connectedPeripheral = peripheral
         peripheral.delegate = self
         peripheral.readRSSI()
+        AppLogger.log("[Finder] Connected to \(peripheral.name ?? "unnamed") — reading RSSI", level: .debug)
         guard peripheral.identifier == trackedDevice?.id || peripheral.identifier == savedDeviceId else { return }
         NotificationCenter.default.post(
             name: .headphonesDidConnect,

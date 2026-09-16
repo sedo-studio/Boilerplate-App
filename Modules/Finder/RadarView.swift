@@ -77,6 +77,15 @@ struct RadarView: View {
                             .appFont(.body)
                             .foregroundStyle(DS.Colors.textSecondary)
                             .multilineTextAlignment(.center)
+                    } else if finder.proximityUnavailable {
+                        Text("radar.nosignal.title")
+                            .appFont(.title2)
+                            .foregroundStyle(DS.Colors.textPrimary)
+                            .multilineTextAlignment(.center)
+                        Text("radar.nosignal.body")
+                            .appFont(.body)
+                            .foregroundStyle(DS.Colors.textSecondary)
+                            .multilineTextAlignment(.center)
                     } else {
                         Text("radar.warmup.title")
                             .appFont(.largeTitle)

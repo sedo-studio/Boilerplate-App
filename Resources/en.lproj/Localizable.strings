@@ -63,6 +63,8 @@
 "radar.eyebrow.warmup" = "Signal · listening";
 "radar.warmup.title" = "Listening…";
 "radar.warmup.body" = "Hold still for a moment while we take a few readings.";
+"radar.nosignal.title" = "No signal from these";
+"radar.nosignal.body" = "These headphones aren't reporting a signal strength we can read — some only use classic Bluetooth, which apps can't measure. The finder can still tell you when they're in range.";
 "radar.gotthem" = "I've got them";
 "radar.preview.chip" = "Preview";
 "radar.preview.note" = "This is the live radar. Unlock it to keep it running while you search.";
