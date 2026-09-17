@@ -83,6 +83,8 @@
 
 /* MARK: - Paywalls (shared) */
 "paywall.error.title" = "Purchase";
+"paywall.legal.terms" = "Terms of Use";
+"paywall.legal.privacy" = "Privacy Policy";
 "paywall.restore" = "Restore purchases";
 "paywall.restore.nothing" = "We couldn't find a previous purchase on this Apple ID.";
 "paywall.period.onetime" = "one-time";

@@ -58,6 +58,19 @@ paying customers out of what they bought, silently.
    the app cannot tell those apart, so check the offering first. `Serving: local
    stub` means the key never reached the build. Debug builds only.
 
+## Subscription metadata Apple checks
+
+An auto-renewing subscription is rejected without **functional links to the
+Terms of Use and the Privacy Policy** in two places:
+
+- **On the App Store product page** — put both URLs at the end of the
+  Description. Apple's automated pre-review checks for them and rejects the
+  submission before a human sees it.
+- **In the app, on the screen selling the subscription** — `PaywallFooter`
+  carries both, under the price.
+
+Having them in Settings is not enough for either check.
+
 ## Without RevenueCat
 
 If the SDK is unlinked or the key is empty, `LocalPurchasesService` takes over:

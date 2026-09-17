@@ -125,6 +125,8 @@ struct PaywallCTAButton: View {
 // MARK: - Footer
 
 struct PaywallFooter: View {
+    @Environment(\.container) private var container
+
     var content: PaywallContent
     var onRestore: () -> Void
     var body: some View {
@@ -138,6 +140,15 @@ struct PaywallFooter: View {
                     .foregroundColor(DS.Colors.textSecondary)
                     .multilineTextAlignment(.center)
             }
+            // Apple requires functional links to both, next to the price, on
+            // any screen selling a subscription. Settings has them too, but a
+            // reviewer looks here.
+            HStack(spacing: DS.Spacing.md) {
+                Link("paywall.legal.terms", destination: container.config.legal.termsURL)
+                Link("paywall.legal.privacy", destination: container.config.legal.privacyPolicyURL)
+            }
+            .appFont(.caption2)
+            .tint(DS.Colors.textSecondary)
         }
     }
 }
