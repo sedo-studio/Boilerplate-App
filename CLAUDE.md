@@ -328,6 +328,14 @@ and are asserted in tests — a typo locks paying customers out. Each entitlemen
 is served by a RevenueCat **offering of the same name**. See
 `documentation/MONETIZATION.md`.
 
+**Two paths to a purchase.** RevenueCat is primary, but `StoreKitStore` talks
+to Apple directly whenever RevenueCat returns no products, and
+`activeEntitlements()` unions both. The App Store product ids live in
+`AppEntitlement.productIdentifier` so the fallback is possible at all. Never
+re-fetch an offering at purchase time — the paywall already holds the package
+in `PackageCache`, and a second round-trip is a second thing that can fail
+after the user has tapped Buy.
+
 `LocalPurchasesService` is the fallback when RevenueCat is unlinked or
 unkeyed. It grants purchases **only in DEBUG** — a release build with a missing
 key sells nothing rather than giving the app away.

@@ -23,24 +23,38 @@ struct EntitlementPaywallView: View {
     @State private var isPurchasing = false
     @State private var errorMessage: String?
     @State private var didPurchase = false
+    /// True only once the store has been asked and came back with nothing, so
+    /// "still loading" is never mistaken for "nothing to sell".
+    @State private var loadFailed = false
 
     var body: some View {
         MinimalistPaywall(
             content: content,
             option: option,
             isPurchasing: isPurchasing,
+            loadFailed: loadFailed,
             onPurchase: purchase,
+            onRetry: { Task { await loadOption() } },
             onRestore: restore,
             onClose: close
         )
         .task {
             container.analytics.track(viewedEvent)
-            option = await entitlements.options(for: entitlement).first
+            await loadOption()
         }
         .alert(Text("paywall.error.title"), isPresented: .constant(errorMessage != nil)) {
             Button("generic.ok") { errorMessage = nil }
         } message: {
             Text(errorMessage ?? "")
+        }
+    }
+
+    private func loadOption() async {
+        loadFailed = false
+        option = await entitlements.options(for: entitlement).first
+        if option == nil {
+            loadFailed = true
+            AppLogger.log("[Paywall] No product for \(entitlement.rawValue) — neither RevenueCat nor StoreKit returned one.", level: .error)
         }
     }
 
@@ -57,10 +71,12 @@ struct EntitlementPaywallView: View {
                     dismiss()
                 }
             } catch PurchaseFriendlyError.cancelled {
+                // The user changed their mind. Not an error.
                 isPurchasing = false
             } catch {
                 isPurchasing = false
                 errorMessage = error.localizedDescription
+                AppLogger.log("[Paywall] Purchase of \(entitlement.rawValue) failed: \(error)", level: .error)
             }
         }
     }

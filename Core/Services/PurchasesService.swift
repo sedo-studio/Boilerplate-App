@@ -15,6 +15,25 @@ public enum AppEntitlement: String, CaseIterable, Sendable {
     /// RevenueCat offering that sells this entitlement. Each entitlement gets
     /// its own offering so the two paywalls never show each other's products.
     public var offeringIdentifier: String { rawValue }
+
+    /// The App Store product that grants this entitlement.
+    ///
+    /// Named here rather than left to RevenueCat on purpose. Asking RevenueCat
+    /// for products is a network call to a third party; when it fails the app
+    /// has nothing to sell and no way to say why. With the identifiers in the
+    /// binary the app can always fall back to StoreKit and talk to Apple
+    /// directly — and Apple's own tooling can see what this app sells.
+    public var productIdentifier: String {
+        switch self {
+        case .radarUnlock: return "com.sedostudio.findmyheadphones.radar"
+        case .leftBehindAlerts: return "com.sedostudio.findmyheadphones.alerts.monthly"
+        }
+    }
+
+    /// The entitlement an App Store product grants, if it is one of ours.
+    public static func forProduct(_ productIdentifier: String) -> AppEntitlement? {
+        allCases.first { $0.productIdentifier == productIdentifier }
+    }
 }
 
 public protocol PurchasesService: Sendable {

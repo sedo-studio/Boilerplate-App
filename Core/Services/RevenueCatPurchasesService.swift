@@ -7,8 +7,25 @@ import Foundation
 #if canImport(RevenueCat)
 import RevenueCat
 
+/// Remembers the packages a paywall was drawn from.
+///
+/// Without this, buying re-fetches every offering from RevenueCat just to find
+/// the package the paywall already had — a second network call, at the worst
+/// possible moment, that can fail on its own and leave the user staring at an
+/// error after tapping Buy.
+private actor PackageCache {
+    private var packages: [String: Package] = [:]
+
+    func store(_ list: [Package]) {
+        for package in list { packages[package.identifier] = package }
+    }
+
+    func package(for identifier: String) -> Package? { packages[identifier] }
+}
+
 struct RevenueCatPurchasesService: PurchasesService {
     private let apiKey: String
+    private let cache = PackageCache()
 
     init(apiKey: String) { self.apiKey = apiKey }
 
@@ -27,8 +44,12 @@ struct RevenueCatPurchasesService: PurchasesService {
     }
 
     func activeEntitlements() async -> Set<String> {
-        guard let info = try? await Purchases.shared.customerInfo() else { return [] }
-        return Set(info.entitlements.active.keys)
+        // Apple is asked as well as RevenueCat, so a purchase made through the
+        // StoreKit fallback still grants access, and so access survives
+        // RevenueCat being unreachable.
+        let fromApple = await StoreKitStore.ownedEntitlements()
+        guard let info = try? await Purchases.shared.customerInfo() else { return fromApple }
+        return Set(info.entitlements.active.keys).union(fromApple)
     }
 
     func refreshEntitlements() async {
@@ -44,33 +65,57 @@ struct RevenueCatPurchasesService: PurchasesService {
             _ = try await Purchases.shared.restorePurchases()
             await broadcast()
         } catch {
-            throw map(error)
+            // Ask Apple directly rather than telling someone who has paid that
+            // their purchase cannot be found.
+            AppLogger.log("[Purchases] RevenueCat restore failed — asking Apple directly.", level: .warning)
+            do {
+                try await StoreKitStore.restore()
+                await broadcast()
+            } catch {
+                throw map(error)
+            }
         }
     }
 
     func loadOptions(for entitlement: AppEntitlement) async -> [PurchaseOption] {
         do {
             let offerings = try await Purchases.shared.offerings()
-            // Fall back to the current offering so a misnamed offering still
-            // shows something rather than an empty paywall.
-            let offering = offerings.offering(identifier: entitlement.offeringIdentifier) ?? offerings.current
-            guard let offering else { return [] }
-            return offering.availablePackages.map(option(from:))
+            // Only the offering named for this entitlement. The old fallback to
+            // `offerings.current` meant a missing alerts offering quietly sold
+            // the radar instead — a wrong price on the wrong paywall, which is
+            // worse than showing nothing.
+            if let offering = offerings.offering(identifier: entitlement.offeringIdentifier),
+               !offering.availablePackages.isEmpty {
+                await cache.store(offering.availablePackages)
+                return offering.availablePackages.map(option(from:))
+            }
+            AppLogger.log("[Purchases] No RevenueCat offering '\(entitlement.offeringIdentifier)' — asking Apple directly.", level: .warning)
         } catch {
-            AppLogger.log("Offerings fetch failed: \(error.localizedDescription)", level: .error)
-            return []
+            AppLogger.log("[Purchases] Offerings fetch failed: \(error.localizedDescription) — asking Apple directly.", level: .error)
         }
+        return await StoreKitStore.options(for: entitlement)
     }
 
     func purchase(packageIdentifier: String) async throws {
-        let offerings = try await Purchases.shared.offerings()
-        let package: Package? = offerings.all.values
-            .compactMap { $0.availablePackages.first(where: { $0.identifier == packageIdentifier }) }
-            .first
-        guard let package else { throw PurchaseFriendlyError.unknown("Product not found.") }
-        do {
-            _ = try await Purchases.shared.purchase(package: package)
+        // The paywall already fetched this package; buying should not need to
+        // ask RevenueCat a second time.
+        guard let package = await cache.package(for: packageIdentifier) else {
+            // Nothing cached means the paywall was drawn from StoreKit, so the
+            // identifier is an App Store product id and Apple can sell it.
+            try await StoreKitStore.purchase(productIdentifier: packageIdentifier)
             await broadcast()
+            return
+        }
+
+        do {
+            let result = try await Purchases.shared.purchase(package: package)
+            // RevenueCat reports a cancellation in the result rather than by
+            // throwing. Treating it as success made a cancelled purchase look
+            // like a silent failure.
+            if result.userCancelled { throw PurchaseFriendlyError.cancelled }
+            await broadcast()
+        } catch let error as PurchaseFriendlyError {
+            throw error
         } catch {
             throw map(error)
         }

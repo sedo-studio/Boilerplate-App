@@ -12,7 +12,11 @@ struct MinimalistPaywall: View {
     let content: PaywallContent
     let option: PurchaseOption?
     let isPurchasing: Bool
+    /// The store was asked and had nothing to sell. Distinct from "still
+    /// asking": a price with a dead button underneath tells the user nothing.
+    let loadFailed: Bool
     var onPurchase: () -> Void
+    var onRetry: () -> Void
     var onRestore: () -> Void
     var onClose: () -> Void
 
@@ -29,12 +33,23 @@ struct MinimalistPaywall: View {
                 }
             }
         } bottom: {
-            PaywallCTAButton(title: content.ctaText(for: option),
-                             subtitle: content.priceDetail(for: option),
-                             isLoading: isPurchasing,
-                             action: onPurchase)
-                .disabled(isPurchasing || option == nil)
-                .opacity(option == nil ? 0.6 : 1)
+            if loadFailed {
+                VStack(spacing: DS.Spacing.sm) {
+                    Text("paywall.error.unavailable")
+                        .appFont(.footnote)
+                        .foregroundStyle(DS.Colors.textSecondary)
+                        .multilineTextAlignment(.center)
+                    Button("paywall.retry", action: onRetry)
+                        .buttonStyle(DSPrimaryButtonStyle())
+                }
+            } else {
+                PaywallCTAButton(title: content.ctaText(for: option),
+                                 subtitle: content.priceDetail(for: option),
+                                 isLoading: isPurchasing,
+                                 action: onPurchase)
+                    .disabled(isPurchasing || option == nil)
+                    .opacity(option == nil ? 0.6 : 1)
+            }
 
             PaywallFooter(content: content, onRestore: onRestore)
         }

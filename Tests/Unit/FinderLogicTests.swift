@@ -335,3 +335,34 @@ final class EarlyConfirmTests: XCTestCase {
         XCTAssertFalse(HeadphoneHeuristic.canConfirmEarly(unnamed, savedId: nil, savedName: nil, elapsed: 10))
     }
 }
+
+final class StoreProductTests: XCTestCase {
+    func testEveryEntitlementNamesItsAppStoreProduct() {
+        // These strings are what the app asks Apple for when RevenueCat cannot
+        // serve a product. A typo here means the fallback silently sells
+        // nothing — the failure this was built to prevent.
+        XCTAssertEqual(AppEntitlement.radarUnlock.productIdentifier,
+                       "com.sedostudio.findmyheadphones.radar")
+        XCTAssertEqual(AppEntitlement.leftBehindAlerts.productIdentifier,
+                       "com.sedostudio.findmyheadphones.alerts.monthly")
+    }
+
+    func testProductsMapBackToTheirEntitlement() {
+        for entitlement in AppEntitlement.allCases {
+            XCTAssertEqual(AppEntitlement.forProduct(entitlement.productIdentifier),
+                           entitlement,
+                           "A StoreKit transaction has to be recognisable as the thing it unlocks.")
+        }
+    }
+
+    func testAnUnknownProductGrantsNothing() {
+        XCTAssertNil(AppEntitlement.forProduct("com.someone.else.product"))
+        XCTAssertNil(AppEntitlement.forProduct(""))
+    }
+
+    func testProductIdentifiersAreDistinct() {
+        let ids = Set(AppEntitlement.allCases.map(\.productIdentifier))
+        XCTAssertEqual(ids.count, AppEntitlement.allCases.count,
+                       "Two entitlements sharing a product would grant each other.")
+    }
+}

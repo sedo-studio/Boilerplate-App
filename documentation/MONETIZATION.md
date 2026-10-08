@@ -71,6 +71,32 @@ Terms of Use and the Privacy Policy** in two places:
 
 Having them in Settings is not enough for either check.
 
+## Two paths to a purchase
+
+RevenueCat is the primary store — it owns the entitlement mapping and the
+reporting. But asking it for products is a network call to a third party, and
+a paywall that cannot reach it has nothing to sell.
+
+So `StoreKitStore` is a direct line to Apple, used whenever RevenueCat returns
+no products, and `activeEntitlements()` is the union of what RevenueCat reports
+and what `Transaction.currentEntitlements` says this Apple ID owns. A purchase
+made either way grants access, and access survives RevenueCat being down.
+
+The App Store product identifiers therefore live in `AppEntitlement`
+(`productIdentifier`) rather than only in RevenueCat's dashboard. That is what
+makes the fallback possible, and it puts the identifiers in the binary where
+Apple's review tooling looks for them.
+
+Two rules that came out of review rejections:
+
+- **Never re-fetch at purchase time.** The paywall already has the package;
+  `PackageCache` keeps it. The old code asked RevenueCat for every offering
+  again when the user tapped Buy, and an empty answer there showed them
+  "Product not found." after they had committed to paying.
+- **A cancellation is not a throw.** RevenueCat's `purchase(package:)` reports
+  it in `result.userCancelled`. Discarding that made a cancelled purchase look
+  like a silent failure.
+
 ## Without RevenueCat
 
 If the SDK is unlinked or the key is empty, `LocalPurchasesService` takes over:

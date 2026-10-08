@@ -85,6 +85,10 @@
 "paywall.error.title" = "Purchase";
 "paywall.legal.terms" = "Terms of Use";
 "paywall.legal.privacy" = "Privacy Policy";
+"paywall.retry" = "Try again";
+"paywall.error.unavailable" = "The App Store isn't offering this right now. Check your connection and try again — nothing has been charged.";
+"paywall.error.unverified" = "The App Store couldn't verify that purchase. Nothing has been charged.";
+"paywall.error.pending" = "That purchase is waiting for approval. It will unlock as soon as it's approved.";
 "paywall.restore" = "Restore purchases";
 "paywall.restore.nothing" = "We couldn't find a previous purchase on this Apple ID.";
 "paywall.period.onetime" = "one-time";
